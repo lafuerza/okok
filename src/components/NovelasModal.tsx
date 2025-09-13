@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc, Smartphone } from 'lucide-react';
 
 // CATÁLOGO DE NOVELAS EMBEBIDO - Generado automáticamente
@@ -64,7 +64,7 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
   const uniqueYears = [...new Set(allNovelas.map(novela => novela.año))].sort((a, b) => b - a);
 
   // Initialize novels with default payment type
-  React.useEffect(() => {
+  useEffect(() => {
     const novelasWithDefaultPayment = allNovelas.map(novela => ({
       ...novela,
       paymentType: 'cash' as const
