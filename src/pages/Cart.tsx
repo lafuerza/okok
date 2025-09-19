@@ -48,6 +48,9 @@ export function Cart() {
     console.log('Novelas agregadas al carrito:', selectedNovels);
   };
 
+  // Get novels currently in cart
+  const novelsInCart = state.items.filter(item => item.type === 'novel') as NovelCartItem[];
+
   const getItemUrl = (item: any) => {
     if (item.type === 'novel') return '#';
     return `/${item.type}/${item.id}`;
@@ -157,9 +160,15 @@ export function Cart() {
               </button>
               <button
                 onClick={handleNovelasModalOpen}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center flex items-center justify-center"
               >
+                <BookOpen className="h-4 w-4 mr-2" />
                 Ver Novelas
+                {novelCount > 0 && (
+                  <span className="ml-2 bg-purple-800 text-white px-2 py-1 rounded-full text-xs">
+                    {novelCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -617,6 +626,7 @@ export function Cart() {
           isOpen={showNovelasModal} 
           onClose={() => setShowNovelasModal(false)}
           onFinalizePedido={handleFinalizePedidoNovelas}
+          preSelectedNovels={novelsInCart}
         />
       </div>
     </div>
