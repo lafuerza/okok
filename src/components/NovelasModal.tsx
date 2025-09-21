@@ -17,14 +17,13 @@ interface NovelasModalProps {
   isOpen: boolean;
   onClose: () => void;
   onFinalizePedido?: (selectedNovels: NovelCartItem[]) => void;
-  preSelectedNovels?: NovelCartItem[];
 }
 
-export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNovels = [] }: NovelasModalProps) {
-  const { getCurrentPrices, addNovel, removeItem, updatePaymentType } = useCart();
+export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModalProps) {
+  const { getCurrentPrices, addNovel } = useCart();
   const [selectedNovelas, setSelectedNovelas] = useState<number[]>([]);
   const [novelasWithPayment, setNovelasWithPayment] = useState<Novela[]>([]);
-  const [showNovelList, setShowNovelList] = useState(false);
+  const [showNovelList, setShowNovelList] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
@@ -107,19 +106,14 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
     }));
     setNovelasWithPayment(novelasWithDefaultPayment);
     
-    // Set pre-selected novels from cart
-    if (preSelectedNovels.length > 0) {
-      const preSelectedIds = preSelectedNovels.map(novel => novel.id);
-      setSelectedNovelas(preSelectedIds);
-      
-      // Update payment types based on cart items
-      const updatedNovelas = novelasWithDefaultPayment.map(novela => {
-        const cartNovel = preSelectedNovels.find(pre => pre.id === novela.id);
-        return cartNovel 
-          ? { ...novela, paymentType: cartNovel.paymentType }
-          : novela;
-      });
-      setNovelasWithPayment(updatedNovelas);
+    // Cargar novelas previamente seleccionadas del carrito
+    const cartItems = JSON.parse(localStorage.getItem('movieCart') || '[]');
+    const novelasEnCarrito = cartItems
+      .filter((item: any) => item.type === 'novel')
+      .map((item: any) => item.id);
+    
+    if (novelasEnCarrito.length > 0) {
+      setSelectedNovelas(novelasEnCarrito);
     }
   }, [adminNovels]);
 
@@ -310,18 +304,9 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
       return;
     }
 
-    // Convertir novelas seleccionadas a NovelCartItem (solo las nuevas)
-    const newlySelectedNovels = selectedNovelas.filter(id => 
-      !preSelectedNovels.some(pre => pre.id === id)
-    );
-    
-    // Remover novelas deseleccionadas del carrito
-    const deselectedNovels = preSelectedNovels.filter(pre => 
-      !selectedNovelas.includes(pre.id)
-    );
-    
+    // Convertir novelas seleccionadas a NovelCartItem
     const selectedNovelItems: NovelCartItem[] = novelasWithPayment
-      .filter(novela => newlySelectedNovels.includes(novela.id))
+      .filter(novela => selectedNovelas.includes(novela.id))
       .map(novela => ({
         id: novela.id,
         title: novela.titulo,
@@ -337,24 +322,9 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
           : novela.capitulos * novelPricePerChapter
       }));
 
-    // Remover novelas deseleccionadas del carrito
-    deselectedNovels.forEach(novel => {
-      removeItem(novel.id);
-    });
-    
-    // Agregar nuevas novelas al carrito
+    // Agregar novelas al carrito
     selectedNovelItems.forEach(novel => {
       addNovel(novel);
-    });
-    
-    // Actualizar tipos de pago para novelas existentes en el carrito
-    preSelectedNovels.forEach(cartNovel => {
-      if (selectedNovelas.includes(cartNovel.id)) {
-        const updatedNovel = novelasWithPayment.find(n => n.id === cartNovel.id);
-        if (updatedNovel && updatedNovel.paymentType !== cartNovel.paymentType) {
-          updatePaymentType(cartNovel.id, updatedNovel.paymentType);
-        }
-      }
     });
 
     // Cerrar modal
@@ -362,24 +332,7 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
     
     // Opcional: callback para ir directamente al checkout
     if (onFinalizePedido) {
-      // Pasar todas las novelas seleccionadas (nuevas y existentes)
-      const allSelectedNovels = novelasWithPayment
-        .filter(novela => selectedNovelas.includes(novela.id))
-        .map(novela => ({
-          id: novela.id,
-          title: novela.titulo,
-          type: 'novel' as const,
-          genre: novela.genero,
-          chapters: novela.capitulos,
-          year: novela.año,
-          description: novela.descripcion,
-          paymentType: novela.paymentType || 'cash',
-          pricePerChapter: novelPricePerChapter,
-          totalPrice: novela.paymentType === 'transfer' 
-            ? Math.round((novela.capitulos * novelPricePerChapter) * (1 + transferFeePercentage / 100))
-            : novela.capitulos * novelPricePerChapter
-        }));
-      onFinalizePedido(allSelectedNovels);
+      onFinalizePedido(selectedNovelItems);
     }
   };
 
@@ -623,11 +576,6 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
                     <h4 className="text-lg sm:text-xl font-bold text-gray-900 text-center sm:text-left">
                       Seleccionar Novelas ({selectedNovelas.length} seleccionadas)
-                      {preSelectedNovels.length > 0 && (
-                        <span className="block text-sm font-normal text-purple-600 mt-1">
-                          {preSelectedNovels.length} novelas ya están en tu carrito
-                        </span>
-                      )}
                     </h4>
                     <div className="flex space-x-2 sm:space-x-3 justify-center sm:justify-end">
                       <button
@@ -692,7 +640,6 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
                     {filteredNovelas.length > 0 ? (
                       filteredNovelas.map((novela) => {
                       const isSelected = selectedNovelas.includes(novela.id);
-                      const isInCart = preSelectedNovels.some(pre => pre.id === novela.id);
                       const baseCost = novela.capitulos * novelPricePerChapter;
                       const transferCost = Math.round(baseCost * (1 + transferFeePercentage / 100));
                       const finalCost = novela.paymentType === 'transfer' ? transferCost : baseCost;
@@ -700,21 +647,12 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
                       return (
                         <div
                           key={novela.id}
-                          className={`p-4 sm:p-6 rounded-2xl border-2 transition-all duration-300 relative ${
+                          className={`p-4 sm:p-6 rounded-2xl border-2 transition-all duration-300 ${
                             isSelected 
-                              ? isInCart
-                                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-lg transform scale-[1.02]'
-                                : 'bg-purple-50 border-purple-300 shadow-lg transform scale-[1.02]'
+                              ? 'bg-purple-50 border-purple-300 shadow-lg transform scale-[1.02]' 
                               : 'bg-gray-50 border-gray-200 hover:bg-purple-25 hover:border-purple-200 hover:shadow-md'
                           }`}
                         >
-                          {/* Indicator for novels already in cart */}
-                          {isInCart && (
-                            <div className="absolute top-2 right-2 bg-green-500 text-white p-2 rounded-full shadow-lg z-10">
-                              <ShoppingCart className="h-4 w-4" />
-                            </div>
-                          )}
-                          
                           <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
                             <input
                               type="checkbox"
@@ -726,16 +664,7 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
                             <div className="flex-1">
                               <div className="flex flex-col xl:flex-row xl:items-start justify-between space-y-4 xl:space-y-0">
                                 <div className="flex-1">
-                                  <h3 className={`text-lg sm:text-xl font-bold mb-3 ${
-                                    isInCart ? 'text-green-800' : 'text-gray-900'
-                                  }`}>
-                                    {novela.titulo}
-                                    {isInCart && (
-                                      <span className="ml-2 text-sm bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                                        En carrito
-                                      </span>
-                                    )}
-                                  </h3>
+                                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">{novela.titulo}</h3>
                                   <div className="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600 mb-4">
                                     <span className="bg-purple-100 text-purple-700 px-2 sm:px-3 py-1 sm:py-2 rounded-full font-medium">
                                       📺 {novela.genero}
@@ -815,10 +744,8 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
                             </div>
                             
                             {isSelected && (
-                              <div className={`text-white p-2 rounded-full animate-bounce shadow-lg self-start sm:self-auto ${
-                                isInCart ? 'bg-green-500' : 'bg-purple-500'
-                              }`}>
-                                {isInCart ? <ShoppingCart className="h-5 w-5" /> : <Check className="h-5 w-5" />}
+                              <div className="bg-purple-500 text-white p-2 rounded-full animate-bounce shadow-lg self-start sm:self-auto">
+                                <Check className="h-5 w-5" />
                               </div>
                             )}
                           </div>
@@ -847,45 +774,10 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
 
                 {selectedNovelas.length > 0 && (
                   <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 sm:p-6 border-t border-gray-200">
-                    {/* Mostrar información sobre cambios en el carrito */}
-                    {preSelectedNovels.length > 0 && (
-                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="text-sm text-blue-700">
-                          <div className="flex items-center mb-2">
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            <span className="font-semibold">Estado del carrito:</span>
-                          </div>
-                          <div className="space-y-1 ml-6">
-                            {preSelectedNovels.length > 0 && (
-                              <div>• {preSelectedNovels.length} novelas ya estaban en el carrito</div>
-                            )}
-                            {selectedNovelas.filter(id => !preSelectedNovels.some(pre => pre.id === id)).length > 0 && (
-                              <div className="text-green-700">
-                                • +{selectedNovelas.filter(id => !preSelectedNovels.some(pre => pre.id === id)).length} novelas nuevas se agregarán
-                              </div>
-                            )}
-                            {preSelectedNovels.filter(pre => !selectedNovelas.includes(pre.id)).length > 0 && (
-                              <div className="text-red-700">
-                                • -{preSelectedNovels.filter(pre => !selectedNovelas.includes(pre.id)).length} novelas se removerán
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
                       <div className="text-center sm:text-left">
                         <p className="text-base sm:text-lg font-bold text-gray-900">
                           {selectedNovelas.length} novelas seleccionadas
-                          {preSelectedNovels.length > 0 && selectedNovelas.length !== preSelectedNovels.length && (
-                            <span className="block text-sm font-normal text-purple-600 mt-1">
-                              {selectedNovelas.length - preSelectedNovels.length > 0 
-                                ? `+${selectedNovelas.length - preSelectedNovels.length} nuevas novelas`
-                                : `${preSelectedNovels.length - selectedNovelas.length} novelas removidas`
-                              }
-                            </span>
-                          )}
                         </p>
                         <p className="text-xs sm:text-sm text-gray-600">
                           Total: ${totals.grandTotal.toLocaleString()} CUP
@@ -896,17 +788,12 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido, preSelectedNov
                         disabled={selectedNovelas.length === 0}
                         className={`w-full sm:w-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 rounded-2xl text-sm sm:text-base font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg ${
                           selectedNovelas.length > 0
-                            ? preSelectedNovels.length > 0 && selectedNovelas.length === preSelectedNovels.length
-                              ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white'
-                              : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
+                            ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
                         <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 mr-2 sm:mr-3" />
-                        {preSelectedNovels.length > 0 && selectedNovelas.length === preSelectedNovels.length
-                          ? 'Actualizar Carrito'
-                          : 'Finalizar Pedido'
-                        }
+                        Finalizar Pedido
                       </button>
                     </div>
                   </div>
