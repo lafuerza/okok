@@ -516,6 +516,11 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
                               {item.chapters} cap.
                             </span>
                           )}
+                          {item.type === 'tv' && item.episodeCount && item.episodeCount > 50 && (
+                            <span className="bg-gradient-to-r from-amber-200 to-orange-200 text-amber-800 px-2 py-1 rounded-full text-xs font-bold">
+                              📊 Serie Extensa
+                            </span>
+                          )}
                           <span className={`px-2 py-1 rounded-full font-medium ${
                             item.paymentType === 'cash' 
                               ? 'bg-green-100 text-green-700' 
