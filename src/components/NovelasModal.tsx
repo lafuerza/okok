@@ -53,6 +53,15 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
             setAdminNovels(config.novels);
           }
         }
+        
+        // Also check admin system state for real-time updates
+        const adminState = localStorage.getItem('admin_system_state');
+        if (adminState) {
+          const state = JSON.parse(adminState);
+          if (state.novels) {
+            setAdminNovels(state.novels);
+          }
+        }
       } catch (error) {
         console.error('Error loading novels:', error);
       }
@@ -64,7 +73,10 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
     const handleAdminStateChange = (event: CustomEvent) => {
       if (event.detail.type === 'novel_add' || 
           event.detail.type === 'novel_update' || 
-          event.detail.type === 'novel_delete') {
+          event.detail.type === 'novel_delete' ||
+          event.detail.type === 'ADD_NOVEL' ||
+          event.detail.type === 'UPDATE_NOVEL' ||
+          event.detail.type === 'DELETE_NOVEL') {
         loadNovels();
       }
     };
@@ -72,6 +84,8 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
     const handleAdminFullSync = (event: CustomEvent) => {
       if (event.detail.config?.novels) {
         setAdminNovels(event.detail.config.novels);
+      } else if (event.detail.state?.novels) {
+        setAdminNovels(event.detail.state.novels);
       }
     };
 

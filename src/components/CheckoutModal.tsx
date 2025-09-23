@@ -76,6 +76,15 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
             setDeliveryZones(config.deliveryZones);
           }
         }
+        
+        // Also check admin system state for real-time updates
+        const adminState = localStorage.getItem('admin_system_state');
+        if (adminState) {
+          const state = JSON.parse(adminState);
+          if (state.deliveryZones) {
+            setDeliveryZones(state.deliveryZones);
+          }
+        }
       } catch (error) {
         console.error('Error loading delivery zones:', error);
       }
@@ -87,7 +96,10 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
     const handleAdminStateChange = (event: CustomEvent) => {
       if (event.detail.type === 'delivery_zone_add' || 
           event.detail.type === 'delivery_zone_update' || 
-          event.detail.type === 'delivery_zone_delete') {
+          event.detail.type === 'delivery_zone_delete' ||
+          event.detail.type === 'ADD_DELIVERY_ZONE' ||
+          event.detail.type === 'UPDATE_DELIVERY_ZONE' ||
+          event.detail.type === 'DELETE_DELIVERY_ZONE') {
         loadDeliveryZones();
       }
     };
@@ -95,6 +107,8 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
     const handleAdminFullSync = (event: CustomEvent) => {
       if (event.detail.config?.deliveryZones) {
         setDeliveryZones(event.detail.config.deliveryZones);
+      } else if (event.detail.state?.deliveryZones) {
+        setDeliveryZones(event.detail.state.deliveryZones);
       }
     };
 

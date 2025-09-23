@@ -1,6 +1,6 @@
 import React from 'react';
 import { DollarSign, Tv, Film, Star, CreditCard } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useAdmin } from '../context/AdminContext';
 
 interface PriceCardProps {
   type: 'movie' | 'tv';
@@ -10,8 +10,38 @@ interface PriceCardProps {
 }
 
 export function PriceCard({ type, selectedSeasons = [], episodeCount = 0, isAnime = false }: PriceCardProps) {
-  const { getCurrentPrices } = useCart();
-  const currentPrices = getCurrentPrices();
+  const { state: adminState } = useAdmin();
+  const [currentPrices, setCurrentPrices] = React.useState(adminState.prices);
+  
+  // Listen for real-time price updates
+  React.useEffect(() => {
+    const handleAdminStateChange = (event: CustomEvent) => {
+      if (event.detail.type === 'UPDATE_PRICES' || event.detail.type === 'prices') {
+        setCurrentPrices(event.detail.data || adminState.prices);
+      }
+    };
+
+    const handleAdminFullSync = (event: CustomEvent) => {
+      if (event.detail.config?.prices) {
+        setCurrentPrices(event.detail.config.prices);
+      } else if (event.detail.state?.prices) {
+        setCurrentPrices(event.detail.state.prices);
+      }
+    };
+
+    window.addEventListener('admin_state_change', handleAdminStateChange as EventListener);
+    window.addEventListener('admin_full_sync', handleAdminFullSync as EventListener);
+
+    return () => {
+      window.removeEventListener('admin_state_change', handleAdminStateChange as EventListener);
+      window.removeEventListener('admin_full_sync', handleAdminFullSync as EventListener);
+    };
+  }, [adminState.prices]);
+  
+  // Update prices when admin state changes
+  React.useEffect(() => {
+    setCurrentPrices(adminState.prices);
+  }, [adminState.prices]);
   
   const moviePrice = currentPrices.moviePrice;
   const seriesPrice = currentPrices.seriesPrice;

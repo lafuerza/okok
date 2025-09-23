@@ -113,7 +113,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Listen for admin price updates
   useEffect(() => {
     const handleAdminStateChange = (event: CustomEvent) => {
-      if (event.detail.type === 'prices') {
+      if (event.detail.type === 'prices' || event.detail.type === 'UPDATE_PRICES') {
         setCurrentPrices(event.detail.data);
       }
     };
@@ -121,6 +121,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const handleAdminFullSync = (event: CustomEvent) => {
       if (event.detail.config?.prices) {
         setCurrentPrices(event.detail.config.prices);
+      } else if (event.detail.state?.prices) {
+        setCurrentPrices(event.detail.state.prices);
       }
     };
 
@@ -134,6 +136,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const config = JSON.parse(adminConfig);
         if (config.prices) {
           setCurrentPrices(config.prices);
+        }
+      }
+      
+      // Also check admin system state
+      const adminState = localStorage.getItem('admin_system_state');
+      if (adminState) {
+        const state = JSON.parse(adminState);
+        if (state.prices) {
+          setCurrentPrices(state.prices);
         }
       }
     } catch (error) {

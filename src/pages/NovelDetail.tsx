@@ -31,11 +31,41 @@ export function NovelDetail() {
   const [isCartHovered, setIsCartHovered] = useState(false);
   const [showCartAnimation, setShowCartAnimation] = useState(false);
   const [paymentType, setPaymentType] = useState<'cash' | 'transfer'>('cash');
-  const { addNovel, removeItem, isInCart, getCurrentPrices } = useCart();
+  const { addNovel, removeItem, isInCart } = useCart();
+  const [currentPrices, setCurrentPrices] = React.useState(adminState.prices);
 
   const novelId = parseInt(id || '0');
   const inCart = isInCart(novelId);
-  const currentPrices = getCurrentPrices();
+  
+  // Listen for real-time price updates
+  React.useEffect(() => {
+    const handleAdminStateChange = (event: CustomEvent) => {
+      if (event.detail.type === 'UPDATE_PRICES' || event.detail.type === 'prices') {
+        setCurrentPrices(event.detail.data || adminState.prices);
+      }
+    };
+
+    const handleAdminFullSync = (event: CustomEvent) => {
+      if (event.detail.config?.prices) {
+        setCurrentPrices(event.detail.config.prices);
+      } else if (event.detail.state?.prices) {
+        setCurrentPrices(event.detail.state.prices);
+      }
+    };
+
+    window.addEventListener('admin_state_change', handleAdminStateChange as EventListener);
+    window.addEventListener('admin_full_sync', handleAdminFullSync as EventListener);
+
+    return () => {
+      window.removeEventListener('admin_state_change', handleAdminStateChange as EventListener);
+      window.removeEventListener('admin_full_sync', handleAdminFullSync as EventListener);
+    };
+  }, [adminState.prices]);
+  
+  // Update prices when admin state changes
+  React.useEffect(() => {
+    setCurrentPrices(adminState.prices);
+  }, [adminState.prices]);
 
   useEffect(() => {
     const fetchNovelData = async () => {

@@ -1158,8 +1158,18 @@ const EMBEDDED_PRICES = ${JSON.stringify(state.prices, null, 2)};
       } 
     });
 
+    // Broadcast to all components including Home page
     window.dispatchEvent(new CustomEvent('admin_state_change', { 
       detail: changeEvent 
+    }));
+    
+    // Also broadcast full state for complete sync
+    window.dispatchEvent(new CustomEvent('admin_full_sync', { 
+      detail: { 
+        config: state.systemConfig,
+        state: state,
+        timestamp: new Date().toISOString()
+      } 
     }));
   };
 
