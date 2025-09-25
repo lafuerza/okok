@@ -11,37 +11,10 @@ import { IMAGE_BASE_URL, POSTER_SIZE } from '../config/api';
 import type { NovelCartItem } from '../types/movie';
 
 export function Cart() {
-  const { state, removeItem, clearCart, updatePaymentType, calculateItemPrice, calculateTotalPrice, calculateTotalByPaymentType, getCurrentPrices } = useCart();
+  const { state, removeItem, clearCart, updatePaymentType, calculateItemPrice, calculateTotalPrice, calculateTotalByPaymentType } = useCart();
   const adminContext = React.useContext(AdminContext);
   const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
   const [showNovelasModal, setShowNovelasModal] = React.useState(false);
-  const [currentPrices, setCurrentPrices] = React.useState(getCurrentPrices());
-  
-  // Listen for real-time price updates
-  React.useEffect(() => {
-    const handleAdminStateChange = (event: CustomEvent) => {
-      if (event.detail.type === 'UPDATE_PRICES' || event.detail.type === 'prices') {
-        setCurrentPrices(getCurrentPrices());
-      }
-    };
-
-    const handleAdminFullSync = (event: CustomEvent) => {
-      setCurrentPrices(getCurrentPrices());
-    };
-
-    window.addEventListener('admin_state_change', handleAdminStateChange as EventListener);
-    window.addEventListener('admin_full_sync', handleAdminFullSync as EventListener);
-
-    return () => {
-      window.removeEventListener('admin_state_change', handleAdminStateChange as EventListener);
-      window.removeEventListener('admin_full_sync', handleAdminFullSync as EventListener);
-    };
-  }, [getCurrentPrices]);
-  
-  // Update prices when admin context changes
-  React.useEffect(() => {
-    setCurrentPrices(getCurrentPrices());
-  }, [adminContext?.state?.prices, getCurrentPrices]);
 
   const handleCheckout = (orderData: OrderData) => {
     // Calculate totals
