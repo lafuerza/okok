@@ -21,8 +21,6 @@ interface NovelCardProps {
 
 export function NovelCard({ novel }: NovelCardProps) {
   const { addNovel, removeItem, isInCart, getCurrentPrices } = useCart();
-  const [showToast, setShowToast] = React.useState(false);
-  const [toastMessage, setToastMessage] = React.useState('');
   const [isHovered, setIsHovered] = React.useState(false);
   const [isAddingToCart, setIsAddingToCart] = React.useState(false);
   
@@ -77,7 +75,6 @@ export function NovelCard({ novel }: NovelCardProps) {
 
     if (inCart) {
       removeItem(novel.id);
-      setToastMessage(`"${novel.titulo}" retirada del carrito`);
     } else {
       const novelCartItem: NovelCartItem = {
         id: novel.id,
@@ -96,17 +93,13 @@ export function NovelCard({ novel }: NovelCardProps) {
       };
 
       addNovel(novelCartItem);
-      setToastMessage(`"${novel.titulo}" agregada al carrito`);
     }
-    
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
   };
 
   const basePrice = novel.capitulos * currentPrices.novelPricePerChapter;
 
   return (
-    <>
+    <div 
       <div 
         className={`group relative bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200 transform ${
           isHovered 
@@ -266,13 +259,6 @@ export function NovelCard({ novel }: NovelCardProps) {
           </div>
         )}
       </div>
-      
-      <Toast
-        message={toastMessage}
-        type={inCart ? "success" : "success"}
-        isVisible={showToast}
-        onClose={() => setShowToast(false)}
-      />
-    </>
+    </div>
   );
 }

@@ -14,8 +14,6 @@ interface MovieCardProps {
 
 export function MovieCard({ item, type }: MovieCardProps) {
   const { addItem, removeItem, isInCart } = useCart();
-  const [showToast, setShowToast] = React.useState(false);
-  const [toastMessage, setToastMessage] = React.useState('');
   const [isHovered, setIsHovered] = React.useState(false);
   const [isAddingToCart, setIsAddingToCart] = React.useState(false);
   
@@ -50,18 +48,13 @@ export function MovieCard({ item, type }: MovieCardProps) {
 
     if (inCart) {
       removeItem(item.id);
-      setToastMessage(`"${title}" retirado del carrito`);
     } else {
       addItem(cartItem);
-      setToastMessage(`"${title}" agregado al carrito`);
     }
-    
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
   };
 
   return (
-    <>
+    <div 
       <div 
         className={`group relative bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200 transform ${
           isHovered 
@@ -217,13 +210,6 @@ export function MovieCard({ item, type }: MovieCardProps) {
           </div>
         )}
       </div>
-      
-      <Toast
-        message={toastMessage}
-        type={inCart ? "success" : "success"}
-        isVisible={showToast}
-        onClose={() => setShowToast(false)}
-      />
-    </>
+    </div>
   );
 }
