@@ -9,6 +9,8 @@ import { HeroCarousel } from '../components/HeroCarousel';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { NovelasModal } from '../components/NovelasModal';
+import { SectionNavigator } from '../components/SectionNavigator';
+import { ScrollableSection } from '../components/ScrollableSection';
 import type { Movie, TVShow } from '../types/movie';
 
 type TrendingTimeWindow = 'day' | 'week';
@@ -242,7 +244,7 @@ export function Home() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Trending Content */}
-        <section className="mb-12">
+        <section id="trending" className="mb-12">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <Flame className="mr-2 h-6 w-6 text-red-500" />
@@ -271,19 +273,21 @@ export function Home() {
           </div>
           
           {/* Movies and TV Shows */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+          <ScrollableSection>
             {trendingContent.map((item) => {
               const itemType = 'title' in item ? 'movie' : 'tv';
               return (
-                <MovieCard key={`trending-${itemType}-${item.id}`} item={item} type={itemType} />
+                <div key={`trending-${itemType}-${item.id}`} className="flex-shrink-0 w-72">
+                  <MovieCard item={item} type={itemType} />
+                </div>
               );
             })}
-          </div>
+          </ScrollableSection>
           
         </section>
 
         {/* Sección Dedicada: Novelas en Transmisión */}
-        <section className="mb-12">
+        <section id="novelas-live" className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <div className="bg-gradient-to-r from-red-500 to-pink-500 p-2 rounded-xl mr-3 shadow-lg">
@@ -304,15 +308,15 @@ export function Home() {
             <>
               {adminState.novels.filter(novel => novel.estado === 'transmision').length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                  <ScrollableSection>
                     {adminState.novels
                       .filter(novel => novel.estado === 'transmision')
                       .slice(0, 10)
                       .map((novel) => (
+                        <div key={`novel-live-wrapper-${novel.id}`} className="flex-shrink-0 w-64">
                         <Link
                           to={`/novel/${novel.id}`}
-                          key={`novel-live-${novel.id}`}
-                          className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:scale-105 border border-gray-200 hover:border-red-300"
+                          className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:scale-105 border border-gray-200 hover:border-red-300 block"
                         >
                           <div className="relative">
                             <img
@@ -377,8 +381,9 @@ export function Home() {
                             </div>
                           </div>
                         </Link>
+                        </div>
                       ))}
-                  </div>
+                  </ScrollableSection>
                   <div className="text-center mt-8">
                     <button
                       onClick={() => setShowNovelasModal(true)}
@@ -428,7 +433,7 @@ export function Home() {
         </section>
 
         {/* Sección Dedicada: Novelas Finalizadas */}
-        <section className="mb-12">
+        <section id="novelas-finished" className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-2 rounded-xl mr-3 shadow-lg">
@@ -449,15 +454,15 @@ export function Home() {
             <>
               {adminState.novels.filter(novel => novel.estado === 'finalizada').length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                  <ScrollableSection>
                     {adminState.novels
                       .filter(novel => novel.estado === 'finalizada')
                       .slice(0, 10)
                       .map((novel) => (
+                        <div key={`novel-finished-wrapper-${novel.id}`} className="flex-shrink-0 w-64">
                         <Link
                           to={`/novel/${novel.id}`}
-                          key={`novel-finished-${novel.id}`}
-                          className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:scale-105 border border-gray-200 hover:border-green-300"
+                          className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:scale-105 border border-gray-200 hover:border-green-300 block"
                         >
                           <div className="relative">
                             <img
@@ -522,8 +527,9 @@ export function Home() {
                             </div>
                           </div>
                         </Link>
+                        </div>
                       ))}
-                  </div>
+                  </ScrollableSection>
                   <div className="text-center mt-8">
                     <button
                       onClick={() => setShowNovelasModal(true)}
@@ -573,7 +579,7 @@ export function Home() {
         </section>
 
         {/* Popular Movies */}
-        <section className="mb-12">
+        <section id="movies" className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <Clapperboard className="mr-2 h-6 w-6 text-blue-500" />
@@ -587,15 +593,17 @@ export function Home() {
               <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <ScrollableSection>
             {popularMovies.map((movie) => (
-              <MovieCard key={movie.id} item={movie} type="movie" />
+              <div key={`movie-wrapper-${movie.id}`} className="flex-shrink-0 w-72">
+                <MovieCard item={movie} type="movie" />
+              </div>
             ))}
-          </div>
+          </ScrollableSection>
         </section>
 
         {/* Popular TV Shows */}
-        <section className="mb-12">
+        <section id="tv-shows" className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <Monitor className="mr-2 h-6 w-6 text-purple-500" />
@@ -609,15 +617,17 @@ export function Home() {
               <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <ScrollableSection>
             {popularTVShows.map((show) => (
-              <MovieCard key={show.id} item={show} type="tv" />
+              <div key={`tv-wrapper-${show.id}`} className="flex-shrink-0 w-72">
+                <MovieCard item={show} type="tv" />
+              </div>
             ))}
-          </div>
+          </ScrollableSection>
         </section>
 
         {/* Popular Anime */}
-        <section className="mb-12">
+        <section id="anime" className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <Sparkles className="mr-2 h-6 w-6 text-pink-500" />
@@ -631,11 +641,13 @@ export function Home() {
               <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <ScrollableSection>
             {popularAnime.map((anime) => (
-              <MovieCard key={anime.id} item={anime} type="tv" />
+              <div key={`anime-wrapper-${anime.id}`} className="flex-shrink-0 w-72">
+                <MovieCard item={anime} type="tv" />
+              </div>
             ))}
-          </div>
+          </ScrollableSection>
         </section>
 
         {/* Last Update Info (Hidden from users) */}
@@ -645,10 +657,13 @@ export function Home() {
       </div>
       
       {/* Modal de Novelas */}
-      <NovelasModal 
-        isOpen={showNovelasModal} 
-        onClose={() => setShowNovelasModal(false)} 
+      <NovelasModal
+        isOpen={showNovelasModal}
+        onClose={() => setShowNovelasModal(false)}
       />
+
+      {/* Section Navigator */}
+      <SectionNavigator />
     </div>
   );
 }
