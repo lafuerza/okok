@@ -351,7 +351,7 @@ const EMBEDDED_CONFIG = {
 // CREDENCIALES DE ACCESO (CONFIGURABLES)
 const ADMIN_CREDENTIALS = {
   username: 'admin',
-  password: 'tvalacarta2024'
+  password: 'admin123'
 };
 
 // Types
