@@ -797,9 +797,10 @@ export interface Notification {
   type: 'success' | 'error' | 'warning' | 'info';
   title: string;
   message: string;
-  timestamp: string;
+  timestamp: Date;
   section: string;
   action: string;
+  read?: boolean;
 }
 
 export interface SyncStatus {
@@ -838,7 +839,7 @@ export interface AdminState {
   systemConfig: SystemConfig;
 }
 
-type AdminAction = 
+type AdminAction =
   | { type: 'LOGIN'; payload: { username: string; password: string } }
   | { type: 'LOGOUT' }
   | { type: 'UPDATE_PRICES'; payload: PriceConfig }
@@ -850,6 +851,7 @@ type AdminAction =
   | { type: 'DELETE_NOVEL'; payload: number }
   | { type: 'ADD_NOTIFICATION'; payload: Omit<Notification, 'id' | 'timestamp'> }
   | { type: 'CLEAR_NOTIFICATIONS' }
+  | { type: 'MARK_NOTIFICATION_READ'; payload: string }
   | { type: 'UPDATE_SYNC_STATUS'; payload: Partial<SyncStatus> }
   | { type: 'SYNC_STATE'; payload: Partial<AdminState> }
   | { type: 'LOAD_SYSTEM_CONFIG'; payload: SystemConfig }
@@ -868,12 +870,15 @@ interface AdminContextType {
   deleteNovel: (id: number) => void;
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
   clearNotifications: () => void;
+  markNotificationRead: (id: string) => void;
   exportSystemConfig: () => void;
   importSystemConfig: (config: SystemConfig) => void;
   exportCompleteSourceCode: () => void;
   syncWithRemote: () => Promise<void>;
   broadcastChange: (change: any) => void;
   syncAllSections: () => Promise<void>;
+  getAvailableCountries: () => string[];
+  updateSystemConfig: (config: Partial<SystemConfig>) => void;
 }
 
 // Initial state with embedded configuration
@@ -1022,7 +1027,8 @@ function adminReducer(state: AdminState, action: AdminAction): AdminState {
       const notification: Notification = {
         ...action.payload,
         id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
+        read: false,
       };
       return {
         ...state,
@@ -1033,6 +1039,14 @@ function adminReducer(state: AdminState, action: AdminAction): AdminState {
       return {
         ...state,
         notifications: [],
+      };
+
+    case 'MARK_NOTIFICATION_READ':
+      return {
+        ...state,
+        notifications: state.notifications.map(n =>
+          n.id === action.payload ? { ...n, read: true } : n
+        ),
       };
 
     case 'UPDATE_SYNC_STATUS':
@@ -1343,6 +1357,36 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const markNotificationRead = (id: string) => {
+    dispatch({ type: 'MARK_NOTIFICATION_READ', payload: id });
+  };
+
+  const getAvailableCountries = (): string[] => {
+    return [
+      'Cuba',
+      'Turqu\u00eda',
+      'M\u00e9xico',
+      'Brasil',
+      'Colombia',
+      'Argentina',
+      'Espa\u00f1a',
+      'Estados Unidos',
+      'Corea del Sur',
+      'India',
+      'Reino Unido',
+      'Francia',
+      'Italia',
+      'Alemania',
+      'Jap\u00f3n',
+      'China',
+      'Rusia'
+    ];
+  };
+
+  const updateSystemConfig = (config: Partial<SystemConfig>) => {
+    dispatch({ type: 'UPDATE_SYSTEM_CONFIG', payload: config });
+  };
+
   const exportSystemConfig = async () => {
     try {
       addNotification({
@@ -1596,12 +1640,15 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         deleteNovel,
         addNotification,
         clearNotifications,
+        markNotificationRead,
         exportSystemConfig,
         importSystemConfig,
         exportCompleteSourceCode,
         syncWithRemote,
         broadcastChange,
         syncAllSections,
+        getAvailableCountries,
+        updateSystemConfig,
       }}
     >
       {children}
