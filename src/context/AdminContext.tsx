@@ -364,6 +364,32 @@ const EMBEDDED_CONFIG = {
       "id": 1759906259323,
       "createdAt": "2025-10-08T06:50:59.323Z",
       "updatedAt": "2025-10-08T06:50:59.323Z"
+    },
+    {
+      "titulo": "Corazón Negro",
+      "genero": "Drama",
+      "capitulos": 53,
+      "año": 2024,
+      "descripcion": "A una edad temprana, Sumru abandonó a sus gemelos recién nacidos sin ni siquiera llegar a tenerlos en sus brazos. Se mudó a Capadocia con su madre, Nihayet, donde se casó con Samet ?ansalan, un hombre rico y prominente en la industria del turismo de la ciudad. Tuvieron dos hijos. Samet también tenía un hijo llamado Cihan de su primer matrimonio.\n\nCriados en circunstancias difíciles, los gemelos, Nuh y Melek, alimentados por el odio hacia la madre que los abandonó, descubren la identidad de su madre. Llegan a Capadocia para reclamar lo que creen que les corresponde y enfrentarse a su madre. Sorprendida, Sumru lo niega todo, pero es consciente de que es solo cuestión de tiempo antes de que se revele el secreto que ha escondido. Las cosas también son complicadas en la mansión de los ?ansalan. La cuñada viuda de Sumru, Hikmet, vive en la mansión con su hija Sevilay. Su objetivo es casar a su hija con su sobrino Cihan y asegurar su futuro. Samet, también apoya este plan.\n\nMientras los gemelos persiguen lo que creen que les corresponde de su madre, Melek se cruza en el camino de Cihan, y Nuh encuentra a Sevilay. Desde el primer momento, Cihan se ve profundamente afectado por Melek y no puede sacársela de la cabeza, incluso cuando se encuentra al borde de un matrimonio forzado. Mientras tanto, Sevilay intenta oponerse al matrimonio por su cuenta, y se cruza en su camino Nuh.\n\nAunque Sumru intenta mantener a los hijos que rechazó alejados de su familia, Melek y Nuh gradualmente se infiltrarán tanto en la familia como en los corazones de Cihan y Sevilay. Mientras los problemas de salud de Samet preocupan a toda la familia, su viejo enemigo, Tahsin, espera en la sombra, listo para vengarse del pasado.",
+      "pais": "Turquía",
+      "imagen": "https://f005.backblazeb2.com/file/120000/tvalacarta/corazon+negro.jpeg",
+      "estado": "transmision",
+      "id": 1759994099585,
+      "createdAt": "2025-10-09T07:14:59.585Z",
+      "updatedAt": "2025-10-09T07:14:59.585Z"
+    },
+    {
+      "titulo": "El olor de un niño",
+      "genero": "Drama",
+      "capitulos": 36,
+      "año": 2017,
+      "descripcion": "eyno, una joven enfermera en Ámsterdam queda embarazada del hombre al que ama, soñando con formar una familia feliz. Pero un momento de ira cambia su destino para siempre, alejándola de su hijo y entrelazando su vida con la poderosa familia Akba?, líder del sector energético en Turquía. Mientras los conflictos de poder y las tensiones familiares sacuden a los Akba?, Zeyno, marcada por la pérdida, se transforma en una mujer fuerte y decidida. Esta es la historia de una madre que lucha por recuperar a su hijo, de un hombre que enfrenta su conciencia, y de secretos que podrían cambiarlo todo.",
+      "pais": "Turquía",
+      "imagen": "https://f005.backblazeb2.com/file/120000/tvalacarta/el+olor+de+un+ni%C3%B1o.jpeg",
+      "estado": "finalizada",
+      "id": 1759994252937,
+      "createdAt": "2025-10-09T07:17:32.937Z",
+      "updatedAt": "2025-10-09T07:17:32.937Z"
     }
   ],
   "settings": {
