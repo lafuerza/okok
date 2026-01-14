@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "NODE_OPTIONS=--openssl-legacy-provider next dev",
+    "build": "NODE_OPTIONS=--openssl-legacy-provider next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "eslint --fix --ext .js,.ts,.tsx ./ --ignore-path .gitignore",
@@ -26,13 +26,13 @@
     ]
   },
   "dependencies": {
-    "@stripe/react-stripe-js": "^1.1.2",
-    "@stripe/stripe-js": "^1.8.0",
+    "@stripe/react-stripe-js": "^1.7.0",
+    "@stripe/stripe-js": "^1.29.0",
     "@types/classnames": "^2.2.11",
     "axios": "^0.19.1",
     "classnames": "^2.2.6",
     "formik": "^2.2.9",
-    "framer-motion": "^2.1.0",
+    "framer-motion": "^4.1.17",
     "next": "^11.1.0",
     "next-themes": "0.0.14",
     "nookies": "^2.0.8",
