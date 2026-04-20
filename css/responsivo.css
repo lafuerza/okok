@@ -130,6 +130,104 @@
         padding: 14px;
     }
 
+    /* Secciones del formulario en móvil */
+    .form-section {
+        margin-bottom: 18px;
+    }
+
+    .form-section-title {
+        gap: 10px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+    }
+
+    .form-section-num {
+        width: 28px;
+        height: 28px;
+        font-size: 13px;
+    }
+
+    .form-section-label {
+        font-size: 15px;
+    }
+
+    .form-section .form-group label {
+        font-size: 13px;
+    }
+
+    /* Botón "Vaciar carrito" en móvil */
+    .acciones-carrinho-wrap {
+        justify-content: center;
+        padding: 8px 0 16px 0;
+    }
+
+    .btn-vaciar-carrinho {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+        padding: 11px 18px;
+        font-size: 13px;
+    }
+
+    /* Resumen detallado en móvil */
+    .resumo-section-title {
+        font-size: 15px;
+        margin-top: 18px;
+        margin-bottom: 12px;
+    }
+
+    .resumo-section-title i {
+        font-size: 16px;
+    }
+
+    .resumo-datos {
+        padding: 12px 14px;
+    }
+
+    .resumo-dato-row {
+        grid-template-columns: 20px 1fr;
+        grid-template-rows: auto auto;
+        gap: 4px 10px;
+        padding: 10px 0;
+        font-size: 13px;
+    }
+
+    .resumo-dato-row .resumo-dato-icon {
+        grid-row: 1 / span 2;
+        align-self: start;
+        padding-top: 2px;
+    }
+
+    .resumo-dato-label {
+        grid-column: 2;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .resumo-dato-value {
+        grid-column: 2;
+        font-size: 14px;
+    }
+
+    .resumo-totais {
+        padding: 14px 16px;
+    }
+
+    .resumo-total-row {
+        font-size: 14px;
+    }
+
+    .resumo-total-row.resumo-total-final {
+        font-size: 16px;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .resumo-total-row.resumo-total-final .resumo-total-value {
+        font-size: 20px;
+    }
+
     .info-local {
         padding: 14px;
         gap: 12px;
