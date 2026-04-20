@@ -617,6 +617,22 @@
                     </div>
                 </div>
 
+                <!-- Resumen de dirección confirmada (visible solo cuando se guarda desde el modal) -->
+                <div id="resumenDireccionConfirmada" class="col-12 direccion-confirmada hidden">
+                    <div class="direccion-confirmada-body">
+                        <div class="direccion-confirmada-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="direccion-confirmada-texto">
+                            <span class="direccion-confirmada-label">Dirección de entrega</span>
+                            <span class="direccion-confirmada-valor" id="resumenDireccionValor"></span>
+                            <span class="direccion-confirmada-municipio" id="resumenDireccionMunicipio"></span>
+                        </div>
+                        <button type="button" class="btn-editar-direccion" onclick="cardapio.metodos.abrirModalDireccion()">
+                            <i class="fas fa-pen"></i>
+                            <span>Editar</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- SECCIÓN 2: Datos de contacto (siempre visibles, organizados) -->
                 <div class="col-12 form-section form-section-cliente">
                     <div class="form-section-title">
@@ -624,73 +640,54 @@
                         <span class="form-section-label">Tus datos de contacto</span>
                     </div>
                     <div class="row form-section-fields">
-                        <div class="col-12 col-lg-4 col-md-6 col-sm-12">
+                        <div class="col-12 col-lg-6 col-md-6 col-sm-12">
                             <div class="form-group">
                                 <label><i class="fas fa-user"></i> ¿Cuál es tu nombre?</label>
                                 <input id="txtComplemento" type="text" class="form-control" placeholder="Tu nombre completo" />
                             </div>
                         </div>
 
-                        <div class="col-12 col-lg-4 col-md-6 col-sm-12">
+                        <div class="col-12 col-lg-6 col-md-6 col-sm-12">
                             <div class="form-group">
                                 <label><i class="fas fa-phone"></i> Teléfono</label>
                                 <input id="txtCEP" type="tel" class="form-control" placeholder="Ej: 53000000" />
                             </div>
                         </div>
-
-                        <div class="col-12 col-lg-4 col-md-12 col-sm-12">
-                            <div class="form-group">
-                                <label><i class="fas fa-money-bill-wave"></i> Método de pago</label>
-                                <select id="ddlUf" class="form-control">
-                                    <option value="Pago en efectivo">Pago en efectivo</option>
-                                    <option value="Pago por transferencia (más el 15% por costo del producto)">Pago por transferencia (+15%)</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- SECCIÓN 3a: Bloque DOMICILIO -->
-                <div id="bloqueDomicilio" class="col-12 form-section bloque-entrega hidden">
-                    <div class="bloque-entrega-header">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <b>Dirección de entrega</b>
+                <!-- SECCIÓN 3: Método de pago con tarjetas -->
+                <div class="col-12 form-section form-section-pago">
+                    <div class="form-section-title">
+                        <span class="form-section-num">3</span>
+                        <span class="form-section-label">Método de pago</span>
                     </div>
-                    <div class="row">
-                        <div class="col-12 col-lg-6 col-md-6 col-sm-12">
-                            <div class="form-group">
-                                <label>Dirección (calle):</label>
-                                <input id="txtEndereco" type="text" class="form-control" placeholder="Calle, entre calles, edificio..." />
+                    <div class="metodo-pago-group" role="radiogroup" aria-label="Método de pago">
+                        <label class="metodo-pago-card selected" data-metodo="efectivo">
+                            <input type="radio" name="metodoPago" value="Pago en efectivo" checked onchange="cardapio.metodos.seleccionarMetodoPago('efectivo')" />
+                            <div class="metodo-pago-icon"><i class="fas fa-money-bill-wave"></i></div>
+                            <div class="metodo-pago-info">
+                                <span class="metodo-pago-title">Pago en efectivo</span>
+                                <span class="metodo-pago-dsc">Paga al momento de recibir</span>
                             </div>
-                        </div>
+                            <div class="metodo-pago-check"><i class="fas fa-check"></i></div>
+                        </label>
 
-                        <div class="col-12 col-lg-4 col-md-4 col-sm-12">
-                            <div class="form-group">
-                                <label>Reparto / Barrio:</label>
-                                <input id="txtBairro" type="text" class="form-control" placeholder="Nombre del reparto" />
+                        <label class="metodo-pago-card" data-metodo="transferencia">
+                            <input type="radio" name="metodoPago" value="Pago por transferencia" onchange="cardapio.metodos.seleccionarMetodoPago('transferencia')" />
+                            <div class="metodo-pago-icon"><i class="fas fa-university"></i></div>
+                            <div class="metodo-pago-info">
+                                <span class="metodo-pago-title">Pago por transferencia</span>
+                                <span class="metodo-pago-dsc">Transferencia bancaria</span>
                             </div>
-                        </div>
-
-                        <div class="col-12 col-lg-2 col-md-2 col-sm-12">
-                            <div class="form-group">
-                                <label>Número:</label>
-                                <input id="txtNumero" type="text" class="form-control" placeholder="#" />
-                            </div>
-                        </div>
-
-                        <div class="col-12">
-                            <div class="form-group">
-                                <label><b>Selecciona el municipio</b> <span class="label-help">(el costo de envío depende del municipio)</span></label>
-                                <div id="listaMunicipios" class="lista-municipios">
-                                    <!-- Se llena por JS -->
-                                </div>
-                                <input id="txtCidade" type="hidden" value="La Habana" />
-                            </div>
-                        </div>
+                            <div class="metodo-pago-check"><i class="fas fa-check"></i></div>
+                        </label>
                     </div>
+                    <!-- input oculto para compatibilidad con el código previo -->
+                    <input id="ddlUf" type="hidden" value="Pago en efectivo" />
                 </div>
 
-                <!-- SECCIÓN 3b: Bloque LOCAL -->
+                <!-- Bloque LOCAL (info del punto de recogida) -->
                 <div id="bloqueLocal" class="col-12 form-section bloque-entrega hidden">
                     <div class="bloque-entrega-header">
                         <i class="fas fa-store"></i>
@@ -713,6 +710,62 @@
                     <p>Selecciona arriba cómo deseas recibir tu pedido.</p>
                 </div>
 
+            </div>
+
+            <!-- ================= MODAL: Dirección de entrega ================= -->
+            <div id="modalDireccion" class="modal-direccion-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalDireccionTitulo">
+                <div class="modal-direccion-dialog">
+                    <div class="modal-direccion-header">
+                        <div class="modal-direccion-header-texto">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>
+                                <h3 id="modalDireccionTitulo">Dirección de entrega</h3>
+                                <p>Completa los datos para entregarte el pedido</p>
+                            </div>
+                        </div>
+                        <button type="button" class="modal-direccion-close" onclick="cardapio.metodos.cerrarModalDireccion()" aria-label="Cerrar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div id="bloqueDomicilio" class="modal-direccion-body">
+                        <div class="row">
+                            <div class="col-12 col-lg-7 col-md-7 col-sm-12">
+                                <div class="form-group">
+                                    <label><i class="fas fa-road"></i> Dirección (calle):</label>
+                                    <input id="txtEndereco" type="text" class="form-control" placeholder="Calle, entre calles, edificio..." />
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-lg-5 col-md-5 col-sm-12">
+                                <div class="form-group">
+                                    <label><i class="fas fa-map-signs"></i> Reparto / Barrio:</label>
+                                    <input id="txtBairro" type="text" class="form-control" placeholder="Nombre del reparto" />
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label><b><i class="fas fa-city"></i> Selecciona el municipio</b> <span class="label-help">(el costo de envío depende del municipio)</span></label>
+                                    <div id="listaMunicipios" class="lista-municipios">
+                                        <!-- Se llena por JS -->
+                                    </div>
+                                    <input id="txtCidade" type="hidden" value="La Habana" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-direccion-footer">
+                        <button type="button" class="btn-modal-cancelar" onclick="cardapio.metodos.cerrarModalDireccion()">
+                            Cancelar
+                        </button>
+                        <button type="button" class="btn-modal-confirmar" onclick="cardapio.metodos.guardarDireccion()">
+                            <i class="fas fa-check"></i>
+                            <span>Guardar dirección</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div id="resumoCarrinho" class="row mr-0 ml-0 animated fadeIn hidden">
@@ -769,19 +822,25 @@
 
     <div class="m-footer">
         <div class="container">
-            <div class="container-total text-right mb-4">
-                <p class="mb-0">
-                    <span>Subtotal:</span>
-                    <span id="lblSubTotal">MN$ 0,00</span>
-                </p>
-                <p class="mb-0 texto-entrega hidden" id="filaEntrega">
-                    <span><i class="fas fa-motorcycle"></i> Entrega <span id="lblMunicipioEntrega" class="lbl-muni-entrega"></span>:</span>
-                    <span id="lblValorEntrega">+ MN$ 0,00</span>
-                </p>
-                <p class="mb-0 texto-total">
-                    <span><b>Total:</b></span>
-                    <span class="valor-total"><b id="lblValorTotal">MN$ 0,00</b></span>
-                </p>
+            <div id="containerTotal" class="container-total text-right mb-4">
+                <button type="button" class="btn-toggle-totais" id="btnToggleTotais" onclick="cardapio.metodos.toggleTotais()" aria-expanded="true" aria-controls="detalleTotais">
+                    <span class="btn-toggle-totais-label" id="lblToggleTotais">Ocultar totales</span>
+                    <i class="fas fa-chevron-down" id="iconToggleTotais"></i>
+                </button>
+                <div id="detalleTotais" class="detalle-totais">
+                    <p class="mb-0">
+                        <span>Subtotal:</span>
+                        <span id="lblSubTotal">MN$ 0,00</span>
+                    </p>
+                    <p class="mb-0 texto-entrega hidden" id="filaEntrega">
+                        <span><i class="fas fa-motorcycle"></i> Entrega <span id="lblMunicipioEntrega" class="lbl-muni-entrega"></span>:</span>
+                        <span id="lblValorEntrega">+ MN$ 0,00</span>
+                    </p>
+                    <p class="mb-0 texto-total">
+                        <span><b>Total:</b></span>
+                        <span class="valor-total"><b id="lblValorTotal">MN$ 0,00</b></span>
+                    </p>
+                </div>
             </div>
 
             <a onclick="cardapio.metodos.carregarEndereco()" class="btn btn-yellow float-right" id="btnEtapaPedido">
