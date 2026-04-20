@@ -2264,54 +2264,191 @@ body.modal-abierto {
 }
 
 /* ============================================= */
-/* ======  FOOTER: toggle mostrar/ocultar ====== */
+/* ======  CAMPOS OBLIGATORIOS / AYUDAS  ======== */
 /* ============================================= */
 
-.container-total {
-    position: relative;
+.req-asterisk {
+    color: var(--color-red);
+    font-weight: 700;
+    margin-left: 2px;
 }
 
-.btn-toggle-totais {
-    display: inline-flex;
+.hint-entrega {
+    display: flex;
     align-items: center;
-    gap: 6px;
-    background-color: transparent;
-    border: 1px solid var(--color-separate);
+    gap: 8px;
+    margin: 0 0 14px 0;
+    padding: 10px 12px;
+    background-color: var(--color-background);
+    border-left: 3px solid var(--color-primary);
+    border-radius: 8px;
+    font-size: 13px;
     color: var(--color-text-out);
-    border-radius: 999px;
-    padding: 4px 12px;
-    font-size: 12px;
+    line-height: 1.4;
+}
+
+.hint-entrega.mt-0 {
+    margin-top: 0;
+}
+
+.hint-entrega i {
+    color: var(--color-primary);
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.hint-entrega b {
+    color: var(--color-black);
+}
+
+/* ============================================= */
+/* ======  TELÉFONO: selector país + input  ==== */
+/* ============================================= */
+
+.telefono-input-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    width: 100%;
+}
+
+.form-control-country {
+    flex: 0 0 auto;
+    min-width: 130px;
+    max-width: 180px;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid var(--color-separate);
+    border-radius: 10px;
+    background-color: var(--color-white);
+    color: var(--color-black);
     font-weight: 600;
     cursor: pointer;
-    margin-bottom: 8px;
-    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.btn-toggle-totais:hover {
+.form-control-country:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(255, 123, 0, 0.15);
+}
+
+.form-control-telefono {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.telefono-feedback {
+    margin: 6px 2px 0 2px;
+    font-size: 12px;
+    min-height: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.telefono-feedback.ok {
+    color: #0a7d2c;
+}
+
+.telefono-feedback.error {
+    color: var(--color-red);
+}
+
+.telefono-feedback i {
+    font-size: 12px;
+}
+
+.form-control.input-error {
+    border-color: var(--color-red) !important;
+}
+
+.form-control.input-ok {
+    border-color: #0a7d2c !important;
+}
+
+/* ============================================= */
+/* ======  INFO LOCAL (dentro del modal)  ====== */
+/* ============================================= */
+
+.info-local-modal {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
     background-color: var(--color-background);
+    border-radius: 12px;
+    border: 1px solid var(--color-separate);
+    margin-bottom: 16px;
+}
+
+.info-local-modal .info-local-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.info-local-modal .info-local-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.info-local-modal .info-local-title {
+    margin: 0 0 8px 0;
+    font-size: 17px;
     color: var(--color-black);
-    border-color: var(--color-black);
 }
 
-.btn-toggle-totais i {
-    font-size: 11px;
-    transition: transform 0.2s ease;
+.info-local-modal .info-local-addr,
+.info-local-modal .info-local-hours,
+.info-local-modal .info-local-nota {
+    margin: 4px 0;
+    font-size: 14px;
+    color: var(--color-text-out);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
 }
 
-.detalle-totais {
-    overflow: hidden;
-    max-height: 500px;
-    opacity: 1;
-    transition: max-height 0.3s ease, opacity 0.2s ease;
+.info-local-modal .info-local-addr i,
+.info-local-modal .info-local-hours i,
+.info-local-modal .info-local-nota i {
+    color: var(--color-primary);
+    margin-top: 3px;
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
 }
 
-.container-total.totais-colapsado .detalle-totais {
-    max-height: 0;
-    opacity: 0;
-    pointer-events: none;
+.ventajas-local {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
 }
 
-.container-total.totais-colapsado {
-    margin-bottom: 10px !important;
-    padding-bottom: 0;
+.ventaja-local-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    background-color: var(--color-white);
+    border: 1px solid var(--color-separate);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--color-black);
+    font-weight: 600;
+}
+
+.ventaja-local-item i {
+    color: #0a7d2c;
+    font-size: 15px;
+    flex-shrink: 0;
 }
