@@ -591,7 +591,7 @@
                 <div class="col-12 form-section form-section-tipo">
                     <div class="form-section-title">
                         <span class="form-section-num">1</span>
-                        <span class="form-section-label">¿Cómo deseas recibir el pedido?</span>
+                        <span class="form-section-label">¿Cómo deseas recibir el pedido? <span class="req-asterisk">*</span></span>
                     </div>
                     <div class="tipo-entrega-group" role="radiogroup" aria-label="Tipo de entrega">
                         <label class="tipo-entrega-card" data-tipo="domicilio">
@@ -604,8 +604,8 @@
                             <div class="tipo-entrega-check"><i class="fas fa-check"></i></div>
                         </label>
 
-                        <label class="tipo-entrega-card" data-tipo="local">
-                            <input type="radio" name="tipoEntrega" value="local" onchange="cardapio.metodos.seleccionarTipoEntrega('local')" />
+                        <label class="tipo-entrega-card selected" data-tipo="local">
+                            <input type="radio" name="tipoEntrega" value="local" checked onchange="cardapio.metodos.seleccionarTipoEntrega('local')" />
                             <div class="tipo-entrega-icon"><i class="fas fa-store"></i></div>
                             <div class="tipo-entrega-info">
                                 <span class="tipo-entrega-title">Recoger en el local</span>
@@ -615,52 +615,66 @@
                             <div class="tipo-entrega-check"><i class="fas fa-check"></i></div>
                         </label>
                     </div>
+                    <p class="hint-entrega" id="hintTipoEntrega">
+                        <i class="fas fa-info-circle"></i>
+                        Por defecto está seleccionada la opción <b>Recoger en el local</b>. Si prefieres entrega a domicilio, selecciónala para ingresar tu dirección.
+                    </p>
                 </div>
 
-                <!-- Resumen de dirección confirmada (visible solo cuando se guarda desde el modal) -->
+                <!-- Resumen de la entrega seleccionada (clicable para volver a abrir el modal) -->
                 <div id="resumenDireccionConfirmada" class="col-12 direccion-confirmada hidden">
                     <div class="direccion-confirmada-body">
-                        <div class="direccion-confirmada-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="direccion-confirmada-icon"><i class="fas fa-map-marker-alt" id="iconResumenDireccion"></i></div>
                         <div class="direccion-confirmada-texto">
-                            <span class="direccion-confirmada-label">Dirección de entrega</span>
+                            <span class="direccion-confirmada-label" id="resumenDireccionTitulo">Dirección de entrega</span>
                             <span class="direccion-confirmada-valor" id="resumenDireccionValor"></span>
                             <span class="direccion-confirmada-municipio" id="resumenDireccionMunicipio"></span>
                         </div>
-                        <button type="button" class="btn-editar-direccion" onclick="cardapio.metodos.abrirModalDireccion()">
+                        <button type="button" class="btn-editar-direccion" onclick="cardapio.metodos.abrirModalEntrega()">
                             <i class="fas fa-pen"></i>
-                            <span>Editar</span>
+                            <span>Ver / Editar</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- SECCIÓN 2: Datos de contacto (siempre visibles, organizados) -->
+                <!-- SECCIÓN 2: Datos de contacto -->
                 <div class="col-12 form-section form-section-cliente">
                     <div class="form-section-title">
                         <span class="form-section-num">2</span>
                         <span class="form-section-label">Tus datos de contacto</span>
                     </div>
+                    <p class="hint-entrega">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Los datos marcados con <span class="req-asterisk">*</span> son obligatorios para completar el pedido.
+                    </p>
                     <div class="row form-section-fields">
                         <div class="col-12 col-lg-6 col-md-6 col-sm-12">
                             <div class="form-group">
-                                <label><i class="fas fa-user"></i> ¿Cuál es tu nombre?</label>
-                                <input id="txtComplemento" type="text" class="form-control" placeholder="Tu nombre completo" />
+                                <label><i class="fas fa-user"></i> ¿Cuál es tu nombre? <span class="req-asterisk">*</span></label>
+                                <input id="txtComplemento" type="text" class="form-control" placeholder="Tu nombre completo" required />
                             </div>
                         </div>
 
                         <div class="col-12 col-lg-6 col-md-6 col-sm-12">
                             <div class="form-group">
-                                <label><i class="fas fa-phone"></i> Teléfono</label>
-                                <input id="txtCEP" type="tel" class="form-control" placeholder="Ej: 53000000" />
+                                <label><i class="fas fa-phone"></i> Teléfono <span class="req-asterisk">*</span></label>
+                                <div class="telefono-input-wrap">
+                                    <select id="ddlCountryCode" class="form-control-country" aria-label="Código de país">
+                                        <!-- Se llena por JS -->
+                                    </select>
+                                    <input id="txtCEP" type="tel" inputmode="numeric" class="form-control form-control-telefono" placeholder="Número de teléfono" required oninput="cardapio.metodos.validarTelefonoEnVivo()" />
+                                </div>
+                                <p class="telefono-feedback" id="telefonoFeedback"></p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- SECCIÓN 3: Método de pago con tarjetas -->
+                <!-- SECCIÓN 3: Método de pago -->
                 <div class="col-12 form-section form-section-pago">
                     <div class="form-section-title">
                         <span class="form-section-num">3</span>
-                        <span class="form-section-label">Método de pago</span>
+                        <span class="form-section-label">Método de pago <span class="req-asterisk">*</span></span>
                     </div>
                     <div class="metodo-pago-group" role="radiogroup" aria-label="Método de pago">
                         <label class="metodo-pago-card selected" data-metodo="efectivo">
@@ -687,82 +701,104 @@
                     <input id="ddlUf" type="hidden" value="Pago en efectivo" />
                 </div>
 
-                <!-- Bloque LOCAL (info del punto de recogida) -->
-                <div id="bloqueLocal" class="col-12 form-section bloque-entrega hidden">
-                    <div class="bloque-entrega-header">
-                        <i class="fas fa-store"></i>
-                        <b>Recoger en el local</b>
-                    </div>
-                    <div class="info-local">
-                        <div class="info-local-icon"><i class="fas fa-map-marker-alt"></i></div>
-                        <div class="info-local-body">
-                            <p class="info-local-title"><b>Farmacia Habana</b></p>
-                            <p class="info-local-addr">Calle 23 #456 entre E y F, Vedado, Plaza de la Revolución, La Habana.</p>
-                            <p class="info-local-hours"><i class="far fa-clock"></i> Lun a Sáb, 9:00 AM - 7:00 PM</p>
-                            <p class="info-local-nota">Te contactaremos por teléfono cuando tu pedido esté listo para recoger.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Estado inicial: pedir elegir tipo -->
-                <div id="mensajeElegirTipo" class="col-12 mensaje-elegir-tipo">
-                    <i class="fas fa-hand-pointer"></i>
-                    <p>Selecciona arriba cómo deseas recibir tu pedido.</p>
-                </div>
-
             </div>
 
-            <!-- ================= MODAL: Dirección de entrega ================= -->
+            <!-- ================= MODAL: Detalles de la entrega (domicilio / local) ================= -->
             <div id="modalDireccion" class="modal-direccion-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalDireccionTitulo">
                 <div class="modal-direccion-dialog">
                     <div class="modal-direccion-header">
                         <div class="modal-direccion-header-texto">
-                            <i class="fas fa-map-marker-alt"></i>
+                            <i class="fas fa-map-marker-alt" id="iconModalEntrega"></i>
                             <div>
                                 <h3 id="modalDireccionTitulo">Dirección de entrega</h3>
-                                <p>Completa los datos para entregarte el pedido</p>
+                                <p id="modalDireccionSubtitulo">Completa los datos para entregarte el pedido</p>
                             </div>
                         </div>
-                        <button type="button" class="modal-direccion-close" onclick="cardapio.metodos.cerrarModalDireccion()" aria-label="Cerrar">
+                        <button type="button" class="modal-direccion-close" onclick="cardapio.metodos.cerrarModalEntrega()" aria-label="Cerrar">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
 
-                    <div id="bloqueDomicilio" class="modal-direccion-body">
-                        <div class="row">
-                            <div class="col-12 col-lg-7 col-md-7 col-sm-12">
-                                <div class="form-group">
-                                    <label><i class="fas fa-road"></i> Dirección (calle):</label>
-                                    <input id="txtEndereco" type="text" class="form-control" placeholder="Calle, entre calles, edificio..." />
-                                </div>
-                            </div>
+                    <div class="modal-direccion-body">
 
-                            <div class="col-12 col-lg-5 col-md-5 col-sm-12">
-                                <div class="form-group">
-                                    <label><i class="fas fa-map-signs"></i> Reparto / Barrio:</label>
-                                    <input id="txtBairro" type="text" class="form-control" placeholder="Nombre del reparto" />
-                                </div>
-                            </div>
-
-                            <div class="col-12">
-                                <div class="form-group">
-                                    <label><b><i class="fas fa-city"></i> Selecciona el municipio</b> <span class="label-help">(el costo de envío depende del municipio)</span></label>
-                                    <div id="listaMunicipios" class="lista-municipios">
-                                        <!-- Se llena por JS -->
+                        <!-- Contenido para ENTREGA A DOMICILIO -->
+                        <div id="modalContentDomicilio" class="hidden">
+                            <p class="hint-entrega mt-0">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Los campos marcados con <span class="req-asterisk">*</span> son obligatorios para completar tu dirección.
+                            </p>
+                            <div id="bloqueDomicilio" class="row">
+                                <div class="col-12 col-lg-7 col-md-7 col-sm-12">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-road"></i> Dirección (calle) <span class="req-asterisk">*</span></label>
+                                        <input id="txtEndereco" type="text" class="form-control" placeholder="Calle, entre calles, edificio..." required />
                                     </div>
-                                    <input id="txtCidade" type="hidden" value="La Habana" />
+                                </div>
+
+                                <div class="col-12 col-lg-5 col-md-5 col-sm-12">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-map-signs"></i> Reparto / Barrio <span class="req-asterisk">*</span></label>
+                                        <input id="txtBairro" type="text" class="form-control" placeholder="Nombre del reparto" required />
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label><b><i class="fas fa-city"></i> Selecciona el municipio</b> <span class="req-asterisk">*</span> <span class="label-help">(el costo de envío depende del municipio)</span></label>
+                                        <div id="listaMunicipios" class="lista-municipios">
+                                            <!-- Se llena por JS -->
+                                        </div>
+                                        <input id="txtCidade" type="hidden" value="La Habana" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Contenido para RECOGER EN EL LOCAL -->
+                        <div id="modalContentLocal" class="hidden">
+                            <div class="info-local info-local-modal">
+                                <div class="info-local-icon"><i class="fas fa-store"></i></div>
+                                <div class="info-local-body">
+                                    <p class="info-local-title"><b>Farmacia Habana</b></p>
+                                    <p class="info-local-addr">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        Calle 23 #456 entre E y F, Vedado, Plaza de la Revolución, La Habana.
+                                    </p>
+                                    <p class="info-local-hours">
+                                        <i class="far fa-clock"></i>
+                                        Lun a Sáb, 9:00 AM - 7:00 PM
+                                    </p>
+                                    <p class="info-local-nota">
+                                        <i class="fas fa-info-circle"></i>
+                                        Te contactaremos por teléfono cuando tu pedido esté listo para recoger.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="ventajas-local">
+                                <div class="ventaja-local-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Sin costo de envío</span>
+                                </div>
+                                <div class="ventaja-local-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Atención personalizada</span>
+                                </div>
+                                <div class="ventaja-local-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Pedido listo en minutos</span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <div class="modal-direccion-footer">
-                        <button type="button" class="btn-modal-cancelar" onclick="cardapio.metodos.cerrarModalDireccion()">
+                        <button type="button" class="btn-modal-cancelar" onclick="cardapio.metodos.cerrarModalEntrega()">
                             Cancelar
                         </button>
-                        <button type="button" class="btn-modal-confirmar" onclick="cardapio.metodos.guardarDireccion()">
+                        <button type="button" class="btn-modal-confirmar" onclick="cardapio.metodos.confirmarEntrega()">
                             <i class="fas fa-check"></i>
-                            <span>Guardar dirección</span>
+                            <span id="lblBtnConfirmarEntrega">Guardar dirección</span>
                         </button>
                     </div>
                 </div>
@@ -822,25 +858,19 @@
 
     <div class="m-footer">
         <div class="container">
-            <div id="containerTotal" class="container-total text-right mb-4">
-                <button type="button" class="btn-toggle-totais" id="btnToggleTotais" onclick="cardapio.metodos.toggleTotais()" aria-expanded="true" aria-controls="detalleTotais">
-                    <span class="btn-toggle-totais-label" id="lblToggleTotais">Ocultar totales</span>
-                    <i class="fas fa-chevron-down" id="iconToggleTotais"></i>
-                </button>
-                <div id="detalleTotais" class="detalle-totais">
-                    <p class="mb-0">
-                        <span>Subtotal:</span>
-                        <span id="lblSubTotal">MN$ 0,00</span>
-                    </p>
-                    <p class="mb-0 texto-entrega hidden" id="filaEntrega">
-                        <span><i class="fas fa-motorcycle"></i> Entrega <span id="lblMunicipioEntrega" class="lbl-muni-entrega"></span>:</span>
-                        <span id="lblValorEntrega">+ MN$ 0,00</span>
-                    </p>
-                    <p class="mb-0 texto-total">
-                        <span><b>Total:</b></span>
-                        <span class="valor-total"><b id="lblValorTotal">MN$ 0,00</b></span>
-                    </p>
-                </div>
+            <div class="container-total text-right mb-4">
+                <p class="mb-0">
+                    <span>Subtotal:</span>
+                    <span id="lblSubTotal">MN$ 0,00</span>
+                </p>
+                <p class="mb-0 texto-entrega hidden" id="filaEntrega">
+                    <span><i class="fas fa-motorcycle"></i> Entrega <span id="lblMunicipioEntrega" class="lbl-muni-entrega"></span>:</span>
+                    <span id="lblValorEntrega">+ MN$ 0,00</span>
+                </p>
+                <p class="mb-0 texto-total">
+                    <span><b>Total:</b></span>
+                    <span class="valor-total"><b id="lblValorTotal">MN$ 0,00</b></span>
+                </p>
             </div>
 
             <a onclick="cardapio.metodos.carregarEndereco()" class="btn btn-yellow float-right" id="btnEtapaPedido">

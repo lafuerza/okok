@@ -6,11 +6,44 @@ var cardapio = {};
 
 var MEU_CARRINHO = [];
 
-// Tipo de entrega seleccionado: 'domicilio' | 'local' | null (sin elegir)
-var TIPO_ENTREGA = null;
+// Tipo de entrega seleccionado: 'domicilio' | 'local'. Por defecto "local".
+var TIPO_ENTREGA = 'local';
 
 // Municipio seleccionado para la entrega a domicilio
 var MUNICIPIO_SELECCIONADO = null;
+
+// Código de país seleccionado para el teléfono (por defecto Cuba)
+var PAIS_TELEFONO_ACTUAL = '+53';
+
+// Listado de países con validación de teléfono (nombre, código, longitud mínima/máxima de dígitos)
+var PAISES_TELEFONO = [
+    { code: '+53',  name: 'Cuba',              min: 8,  max: 8  },
+    { code: '+1',   name: 'EE.UU. / Canadá',   min: 10, max: 10 },
+    { code: '+34',  name: 'España',            min: 9,  max: 9  },
+    { code: '+52',  name: 'México',            min: 10, max: 10 },
+    { code: '+58',  name: 'Venezuela',         min: 10, max: 10 },
+    { code: '+57',  name: 'Colombia',          min: 10, max: 10 },
+    { code: '+54',  name: 'Argentina',         min: 10, max: 11 },
+    { code: '+56',  name: 'Chile',             min: 9,  max: 9  },
+    { code: '+55',  name: 'Brasil',            min: 10, max: 11 },
+    { code: '+593', name: 'Ecuador',           min: 9,  max: 9  },
+    { code: '+51',  name: 'Perú',              min: 9,  max: 9  },
+    { code: '+591', name: 'Bolivia',           min: 8,  max: 8  },
+    { code: '+598', name: 'Uruguay',           min: 8,  max: 9  },
+    { code: '+595', name: 'Paraguay',          min: 9,  max: 9  },
+    { code: '+502', name: 'Guatemala',         min: 8,  max: 8  },
+    { code: '+503', name: 'El Salvador',       min: 8,  max: 8  },
+    { code: '+504', name: 'Honduras',          min: 8,  max: 8  },
+    { code: '+505', name: 'Nicaragua',         min: 8,  max: 8  },
+    { code: '+506', name: 'Costa Rica',        min: 8,  max: 8  },
+    { code: '+507', name: 'Panamá',            min: 7,  max: 8  },
+    { code: '+39',  name: 'Italia',            min: 9,  max: 11 },
+    { code: '+49',  name: 'Alemania',          min: 10, max: 12 },
+    { code: '+33',  name: 'Francia',           min: 9,  max: 9  },
+    { code: '+44',  name: 'Reino Unido',       min: 10, max: 10 },
+    { code: '+351', name: 'Portugal',          min: 9,  max: 9  },
+    { code: '+7',   name: 'Rusia',             min: 10, max: 10 }
+];
 
 // Municipios reales de La Habana con costo de envío (en MN / CUP)
 var MUNICIPIOS_HABANA = [
@@ -55,6 +88,9 @@ cardapio.eventos = {
         cardapio.metodos.obterItensCardapio();
         cardapio.metodos.carregarBotaoLigar();
         cardapio.metodos.carregarBotaoReserva();
+
+        // poblar el selector de código de país (teléfono)
+        cardapio.metodos.renderCodigosPais();
 
         // cerrar lightbox con la tecla ESC
         $(document).on('keydown', (ev) => {
@@ -713,16 +749,14 @@ cardapio.metodos = {
         cardapio.metodos.carregarEtapa(2);
         cardapio.metodos.renderMunicipios();
 
-        // si aún no se eligió tipo, mostrar mensaje inicial
-        if (TIPO_ENTREGA === null) {
-            $("#bloqueLocal").addClass('hidden');
-            $("#resumenDireccionConfirmada").addClass('hidden');
-            $("#mensajeElegirTipo").removeClass('hidden');
-        } else {
-            // restaurar selección previa
-            $(`input[name='tipoEntrega'][value='${TIPO_ENTREGA}']`).prop('checked', true);
-            cardapio.metodos.seleccionarTipoEntrega(TIPO_ENTREGA);
-        }
+        // por defecto está preseleccionada la opción "local" en el HTML.
+        // Si ya se hizo una elección previa, restaurarla visualmente.
+        $(`input[name='tipoEntrega'][value='${TIPO_ENTREGA}']`).prop('checked', true);
+        $(".tipo-entrega-card").removeClass('selected');
+        $(`.tipo-entrega-card[data-tipo='${TIPO_ENTREGA}']`).addClass('selected');
+
+        // refrescar vista de la entrega seleccionada
+        cardapio.metodos.refrescarVistaEntrega();
 
     },
 
@@ -731,6 +765,7 @@ cardapio.metodos = {
     // ============================================================
 
     // el usuario selecciona un tipo de entrega (domicilio | local)
+    // SIEMPRE abre el modal para que el usuario vea/confirme los datos
     seleccionarTipoEntrega: (tipo) => {
 
         TIPO_ENTREGA = tipo;
@@ -739,76 +774,119 @@ cardapio.metodos = {
         $(".tipo-entrega-card").removeClass('selected');
         $(`.tipo-entrega-card[data-tipo='${tipo}']`).addClass('selected');
 
-        $("#mensajeElegirTipo").addClass('hidden');
-
-        if (tipo === 'domicilio') {
-            $("#bloqueLocal").addClass('hidden');
-
-            // si hay municipio previo, reaplicar costo; si no, 0
-            if (MUNICIPIO_SELECCIONADO) {
-                VALOR_ENTREGA = MUNICIPIO_SELECCIONADO.costo;
-                // mostrar resumen de dirección ya guardada
-                cardapio.metodos.actualizarResumenDireccionConfirmada();
-            } else {
-                VALOR_ENTREGA = 0;
-                // abrir modal de dirección la primera vez
-                cardapio.metodos.abrirModalDireccion();
-            }
-            $("#filaEntrega").removeClass('hidden');
-        }
-        else if (tipo === 'local') {
-            $("#bloqueLocal").removeClass('hidden');
-            $("#resumenDireccionConfirmada").addClass('hidden');
-
-            // gratis
+        if (tipo === 'local') {
+            // recogida en el local: gratis, sin municipio
             VALOR_ENTREGA = 0;
             MUNICIPIO_SELECCIONADO = null;
             $("#filaEntrega").addClass('hidden');
             $("#lblMunicipioEntrega").text('');
+        } else if (tipo === 'domicilio') {
+            // si ya había dirección previa válida, mantener costo
+            if (MUNICIPIO_SELECCIONADO) {
+                VALOR_ENTREGA = MUNICIPIO_SELECCIONADO.costo;
+            } else {
+                VALOR_ENTREGA = 0;
+            }
+            $("#filaEntrega").removeClass('hidden');
         }
 
+        // abrir la ventana (modal) para mostrar todas las opciones del tipo seleccionado
+        cardapio.metodos.abrirModalEntrega();
+
+        cardapio.metodos.refrescarVistaEntrega();
         cardapio.metodos.carregarValores();
     },
 
+    // Refresca el resumen visible debajo de las tarjetas de tipo de entrega
+    refrescarVistaEntrega: () => {
+        if (TIPO_ENTREGA === 'local') {
+            cardapio.metodos.actualizarResumenEntregaLocal();
+        } else if (TIPO_ENTREGA === 'domicilio') {
+            cardapio.metodos.actualizarResumenDireccionConfirmada();
+        }
+    },
+
     // ============================================================
-    //  MODAL: Dirección de entrega (domicilio)
+    //  MODAL UNIFICADO: Detalles de la entrega (domicilio / local)
     // ============================================================
 
-    // Abre el modal con los campos de dirección
-    abrirModalDireccion: () => {
-        // asegurar que los municipios están renderizados
-        cardapio.metodos.renderMunicipios();
+    // Abre el modal y muestra el contenido según el tipo de entrega actual
+    abrirModalEntrega: () => {
+
+        let $icon = $("#iconModalEntrega");
+        let $titulo = $("#modalDireccionTitulo");
+        let $subtitulo = $("#modalDireccionSubtitulo");
+        let $btnTxt = $("#lblBtnConfirmarEntrega");
+
+        // ocultar ambos bloques antes de mostrar el correspondiente
+        $("#modalContentDomicilio").addClass('hidden');
+        $("#modalContentLocal").addClass('hidden');
+
+        if (TIPO_ENTREGA === 'domicilio') {
+            cardapio.metodos.renderMunicipios();
+
+            $icon.attr('class', 'fas fa-motorcycle');
+            $titulo.text('Dirección de entrega');
+            $subtitulo.text('Completa los datos para entregarte el pedido a domicilio');
+            $btnTxt.text('Guardar dirección');
+
+            $("#modalContentDomicilio").removeClass('hidden');
+        } else {
+            $icon.attr('class', 'fas fa-store');
+            $titulo.text('Recoger en el local');
+            $subtitulo.text('Revisa la información del punto de recogida');
+            $btnTxt.text('Entendido, continuar');
+
+            $("#modalContentLocal").removeClass('hidden');
+        }
 
         $("#modalDireccion").removeClass('hidden');
         $("body").addClass('modal-abierto');
 
-        // foco en el primer campo para mejor UX
-        setTimeout(() => {
-            $("#txtEndereco").trigger('focus');
-        }, 80);
+        // foco en el primer campo para mejor UX (solo domicilio)
+        if (TIPO_ENTREGA === 'domicilio') {
+            setTimeout(() => {
+                $("#txtEndereco").trigger('focus');
+            }, 80);
+        }
     },
 
-    // Cierra el modal sin guardar (si no hay dirección previa y el tipo es domicilio,
-    // deja el tipo seleccionado pero sin datos todavía; el usuario puede volver a abrir)
-    cerrarModalDireccion: () => {
+    // Alias para mantener compatibilidad
+    abrirModalDireccion: () => cardapio.metodos.abrirModalEntrega(),
+
+    // Cierra el modal
+    cerrarModalEntrega: () => {
         $("#modalDireccion").addClass('hidden');
         $("body").removeClass('modal-abierto');
     },
+    cerrarModalDireccion: () => cardapio.metodos.cerrarModalEntrega(),
 
-    // Valida y guarda la dirección desde el modal
+    // Botón "Confirmar/Guardar" del modal
+    confirmarEntrega: () => {
+        if (TIPO_ENTREGA === 'domicilio') {
+            cardapio.metodos.guardarDireccion();
+        } else {
+            // local: solo cerrar y mostrar el resumen
+            cardapio.metodos.cerrarModalEntrega();
+            cardapio.metodos.actualizarResumenEntregaLocal();
+            cardapio.metodos.mensagem('Recogida en el local confirmada.', 'green');
+        }
+    },
+
+    // Valida y guarda la dirección desde el modal (domicilio)
     guardarDireccion: () => {
 
         let endereco = $("#txtEndereco").val().trim();
         let bairro = $("#txtBairro").val().trim();
 
         if (endereco.length <= 0) {
-            cardapio.metodos.mensagem('Rellene el campo Dirección, por favor.');
+            cardapio.metodos.mensagem('El campo Dirección (calle) es obligatorio.');
             $("#txtEndereco").trigger('focus');
             return;
         }
 
         if (bairro.length <= 0) {
-            cardapio.metodos.mensagem('Rellene el campo Reparto o Barrio, por favor.');
+            cardapio.metodos.mensagem('El campo Reparto / Barrio es obligatorio.');
             $("#txtBairro").trigger('focus');
             return;
         }
@@ -819,26 +897,40 @@ cardapio.metodos = {
         }
 
         // todo ok, cerrar y reflejar
-        cardapio.metodos.cerrarModalDireccion();
+        cardapio.metodos.cerrarModalEntrega();
         cardapio.metodos.actualizarResumenDireccionConfirmada();
         cardapio.metodos.carregarValores();
         cardapio.metodos.mensagem('Dirección guardada correctamente.', 'green');
     },
 
-    // Muestra el resumen de la dirección confirmada debajo de las tarjetas
+    // Muestra el resumen de la dirección confirmada (domicilio) debajo de las tarjetas
     actualizarResumenDireccionConfirmada: () => {
         let endereco = $("#txtEndereco").val().trim();
         let bairro = $("#txtBairro").val().trim();
 
-        if (!endereco || !bairro || !MUNICIPIO_SELECCIONADO || TIPO_ENTREGA !== 'domicilio') {
+        if (TIPO_ENTREGA !== 'domicilio' || !endereco || !bairro || !MUNICIPIO_SELECCIONADO) {
             $("#resumenDireccionConfirmada").addClass('hidden');
             return;
         }
 
+        $("#iconResumenDireccion").attr('class', 'fas fa-motorcycle');
+        $("#resumenDireccionTitulo").text('Entrega a domicilio');
         $("#resumenDireccionValor").text(`${endereco} — ${bairro}`);
         $("#resumenDireccionMunicipio").text(
             `Municipio: ${MUNICIPIO_SELECCIONADO.nome} · Envío MN$ ${MUNICIPIO_SELECCIONADO.costo.toFixed(2).replace('.', ',')}`
         );
+        $("#resumenDireccionConfirmada").removeClass('hidden');
+    },
+
+    // Muestra el resumen de la recogida en el local
+    actualizarResumenEntregaLocal: () => {
+        if (TIPO_ENTREGA !== 'local') {
+            return;
+        }
+        $("#iconResumenDireccion").attr('class', 'fas fa-store');
+        $("#resumenDireccionTitulo").text('Recoger en el local');
+        $("#resumenDireccionValor").text('Farmacia Habana · Calle 23 #456 entre E y F, Vedado');
+        $("#resumenDireccionMunicipio").text('Horario: Lun a Sáb, 9:00 AM - 7:00 PM · Envío gratis');
         $("#resumenDireccionConfirmada").removeClass('hidden');
     },
 
@@ -858,25 +950,82 @@ cardapio.metodos = {
     },
 
     // ============================================================
-    //  FOOTER: mostrar/ocultar totales para ver mejor el formulario
+    //  TELÉFONO: selector de código de país + validación
     // ============================================================
 
-    toggleTotais: () => {
-        let $cont = $("#containerTotal");
-        let $btn = $("#btnToggleTotais");
-        let $icon = $("#iconToggleTotais");
-        let $lbl = $("#lblToggleTotais");
+    renderCodigosPais: () => {
+        let $sel = $("#ddlCountryCode");
+        if ($sel.length === 0 || $sel.children().length > 0) return;
 
-        $cont.toggleClass('totais-colapsado');
+        let html = '';
+        PAISES_TELEFONO.forEach((p) => {
+            let selected = (p.code === PAIS_TELEFONO_ACTUAL) ? 'selected' : '';
+            html += `<option value="${p.code}" ${selected}>${p.code} ${p.name}</option>`;
+        });
+        $sel.html(html);
 
-        if ($cont.hasClass('totais-colapsado')) {
-            $btn.attr('aria-expanded', 'false');
-            $icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
-            $lbl.text('Mostrar totales');
+        $sel.off('change.codigopais').on('change.codigopais', function () {
+            PAIS_TELEFONO_ACTUAL = $(this).val();
+            cardapio.metodos.validarTelefonoEnVivo();
+        });
+    },
+
+    // Busca el país por código
+    buscarPaisTelefono: (code) => {
+        return PAISES_TELEFONO.find((p) => p.code === code) || PAISES_TELEFONO[0];
+    },
+
+    // Valida el teléfono: solo dígitos, longitud correcta según país.
+    // Devuelve { ok: bool, msg: string, digitos: string, pais: obj }
+    validarTelefono: () => {
+        let code = $("#ddlCountryCode").val() || PAIS_TELEFONO_ACTUAL;
+        let pais = cardapio.metodos.buscarPaisTelefono(code);
+        let raw = ($("#txtCEP").val() || '').trim();
+        // quitar espacios, guiones, paréntesis, y el propio prefijo si lo incluyó el usuario
+        let digitos = raw.replace(/[\s\-()+]/g, '');
+        if (digitos.startsWith(pais.code.replace('+', ''))) {
+            digitos = digitos.substring(pais.code.replace('+', '').length);
+        }
+
+        if (digitos.length === 0) {
+            return { ok: false, msg: 'El teléfono es obligatorio.', digitos: '', pais: pais };
+        }
+        if (!/^\d+$/.test(digitos)) {
+            return { ok: false, msg: 'El teléfono solo puede contener números.', digitos: digitos, pais: pais };
+        }
+        if (digitos.length < pais.min || digitos.length > pais.max) {
+            let rango = (pais.min === pais.max) ? `${pais.min} dígitos` : `entre ${pais.min} y ${pais.max} dígitos`;
+            return {
+                ok: false,
+                msg: `Número no válido para ${pais.name} (${pais.code}). Debe tener ${rango}.`,
+                digitos: digitos,
+                pais: pais
+            };
+        }
+
+        return { ok: true, msg: 'Número válido', digitos: digitos, pais: pais };
+    },
+
+    // Muestra feedback en vivo debajo del campo teléfono
+    validarTelefonoEnVivo: () => {
+        let $fb = $("#telefonoFeedback");
+        let raw = ($("#txtCEP").val() || '').trim();
+
+        if (raw.length === 0) {
+            $fb.removeClass('error ok').text('');
+            $("#txtCEP").removeClass('input-error input-ok');
+            return;
+        }
+
+        let r = cardapio.metodos.validarTelefono();
+        if (r.ok) {
+            $fb.removeClass('error').addClass('ok')
+                .html(`<i class="fas fa-check-circle"></i> ${r.msg} · ${r.pais.code} ${r.pais.name}`);
+            $("#txtCEP").removeClass('input-error').addClass('input-ok');
         } else {
-            $btn.attr('aria-expanded', 'true');
-            $icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
-            $lbl.text('Ocultar totales');
+            $fb.removeClass('ok').addClass('error')
+                .html(`<i class="fas fa-exclamation-triangle"></i> ${r.msg}`);
+            $("#txtCEP").removeClass('input-ok').addClass('input-error');
         }
     },
 
@@ -932,22 +1081,28 @@ cardapio.metodos = {
             return;
         }
 
-        let cep = $("#txtCEP").val().trim();
         let uf = $("#ddlUf").val().trim();
         let complemento = $("#txtComplemento").val().trim();
 
-        // campos comunes a los dos tipos
+        // nombre obligatorio
         if (complemento.length <= 0) {
-            cardapio.metodos.mensagem('Rellene su nombre, por favor.');
+            cardapio.metodos.mensagem('El campo "¿Cuál es tu nombre?" es obligatorio.');
             $("#txtComplemento").focus();
             return;
         }
 
-        if (cep.length <= 0) {
-            cardapio.metodos.mensagem('Rellene el teléfono, por favor.');
+        // validación de teléfono con código de país
+        let tel = cardapio.metodos.validarTelefono();
+        if (!tel.ok) {
+            cardapio.metodos.mensagem(tel.msg);
+            cardapio.metodos.validarTelefonoEnVivo();
             $("#txtCEP").focus();
             return;
         }
+
+        // teléfono completo con código de país
+        let telefonoCompleto = `${tel.pais.code} ${tel.digitos}`;
+        let cep = telefonoCompleto;
 
         if (TIPO_ENTREGA === 'domicilio') {
 
@@ -957,13 +1112,15 @@ cardapio.metodos = {
 
             if (endereco.length <= 0 || bairro.length <= 0 || !MUNICIPIO_SELECCIONADO) {
                 cardapio.metodos.mensagem('Completa la dirección de entrega antes de continuar.');
-                cardapio.metodos.abrirModalDireccion();
+                cardapio.metodos.abrirModalEntrega();
                 return;
             }
 
             MEU_ENDERECO = {
                 tipo: 'domicilio',
                 cep: cep,
+                telefonoPais: tel.pais,
+                telefonoDigitos: tel.digitos,
                 endereco: endereco,
                 bairro: bairro,
                 cidade: cidade,
@@ -978,6 +1135,8 @@ cardapio.metodos = {
             MEU_ENDERECO = {
                 tipo: 'local',
                 cep: cep,
+                telefonoPais: tel.pais,
+                telefonoDigitos: tel.digitos,
                 uf: uf,
                 complemento: complemento,
                 costoEntrega: 0
@@ -1032,7 +1191,12 @@ cardapio.metodos = {
         let clienteHTML = '';
         if (MEU_ENDERECO) {
             clienteHTML += cardapio.metodos.filaResumo('fas fa-user', 'Nombre:', MEU_ENDERECO.complemento);
-            clienteHTML += cardapio.metodos.filaResumo('fas fa-phone', 'Teléfono:', MEU_ENDERECO.cep);
+            // teléfono con código de país y país
+            let telDisplay = MEU_ENDERECO.cep;
+            if (MEU_ENDERECO.telefonoPais) {
+                telDisplay = `${MEU_ENDERECO.telefonoPais.code} ${MEU_ENDERECO.telefonoDigitos} (${MEU_ENDERECO.telefonoPais.name})`;
+            }
+            clienteHTML += cardapio.metodos.filaResumo('fas fa-phone', 'Teléfono:', telDisplay);
             let metodoPagoLabel = MEU_ENDERECO.uf;
             if (esTransferencia) {
                 metodoPagoLabel += ' (se añade 15% de recargo)';
@@ -1144,7 +1308,11 @@ cardapio.metodos = {
         // --- Datos del cliente ---
         texto += '*DATOS DEL CLIENTE:*\n';
         texto += `• *Nombre:* ${MEU_ENDERECO.complemento}\n`;
-        texto += `• *Teléfono:* ${MEU_ENDERECO.cep}\n`;
+        let telText = MEU_ENDERECO.cep;
+        if (MEU_ENDERECO.telefonoPais) {
+            telText = `${MEU_ENDERECO.telefonoPais.code} ${MEU_ENDERECO.telefonoDigitos} (${MEU_ENDERECO.telefonoPais.name})`;
+        }
+        texto += `• *Teléfono:* ${telText}\n`;
         texto += `• *Método de pago:* ${MEU_ENDERECO.uf}`;
         if (esTransferencia) {
             texto += `\n   _Se aplica un recargo del 15% sobre el subtotal de los productos: +MN$ ${fmt(recargoTransferencia)}_`;

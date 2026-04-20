@@ -594,24 +594,59 @@
         padding: 11px 18px;
     }
 
-    /* Botón toggle totales - footer */
-    .btn-toggle-totais {
-        position: absolute;
-        top: 14px;
-        right: 0;
-        font-size: 11px;
-        padding: 3px 10px;
-    }
-
-    .btn-toggle-totais-label {
-        display: inline;
-    }
-
     /* Lista municipios scrollable dentro del modal si hay muchas opciones */
     .modal-direccion-body .lista-municipios {
         max-height: 280px;
         overflow-y: auto;
         padding-right: 4px;
+    }
+
+    /* Teléfono: selector país + input - apilar en móvil */
+    .telefono-input-wrap {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-control-country {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+    }
+
+    .telefono-feedback {
+        font-size: 11px;
+    }
+
+    /* Ventajas local - 1 columna en móvil */
+    .ventajas-local {
+        grid-template-columns: 1fr;
+    }
+
+    .info-local-modal {
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .info-local-modal .info-local-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 18px;
+    }
+
+    .info-local-modal .info-local-title {
+        font-size: 15px;
+    }
+
+    .info-local-modal .info-local-addr,
+    .info-local-modal .info-local-hours,
+    .info-local-modal .info-local-nota {
+        font-size: 13px;
+    }
+
+    /* Hint entrega - móvil */
+    .hint-entrega {
+        font-size: 12px;
+        padding: 9px 11px;
     }
 
 }
