@@ -576,11 +576,23 @@
 
             </div>
 
+            <div id="accionesCarrinho" class="row mr-0 ml-0 animated fadeIn hidden">
+                <div class="col-12 acciones-carrinho-wrap">
+                    <button type="button" class="btn-vaciar-carrinho" onclick="cardapio.metodos.vaciarCarrinho()">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Vaciar carrito</span>
+                    </button>
+                </div>
+            </div>
+
             <div id="localEntrega" class="row mr-0 ml-0 animated fadeIn hidden">
 
-                <!-- Selector: Tipo de entrega -->
-                <div class="col-12">
-                    <label class="form-label-entrega"><b>¿Cómo deseas recibir el pedido?</b></label>
+                <!-- SECCIÓN 1: Tipo de entrega (siempre por encima) -->
+                <div class="col-12 form-section form-section-tipo">
+                    <div class="form-section-title">
+                        <span class="form-section-num">1</span>
+                        <span class="form-section-label">¿Cómo deseas recibir el pedido?</span>
+                    </div>
                     <div class="tipo-entrega-group" role="radiogroup" aria-label="Tipo de entrega">
                         <label class="tipo-entrega-card" data-tipo="domicilio">
                             <input type="radio" name="tipoEntrega" value="domicilio" onchange="cardapio.metodos.seleccionarTipoEntrega('domicilio')" />
@@ -605,33 +617,41 @@
                     </div>
                 </div>
 
-                <!-- Datos de contacto (siempre visibles) -->
-                <div class="col-12 col-lg-4 col-md-4 col-sm-12">
-                    <div class="form-group">
-                        <label>¿Cuál es tu nombre?</label>
-                        <input id="txtComplemento" type="text" class="form-control" placeholder="Tu nombre completo" />
+                <!-- SECCIÓN 2: Datos de contacto (siempre visibles, organizados) -->
+                <div class="col-12 form-section form-section-cliente">
+                    <div class="form-section-title">
+                        <span class="form-section-num">2</span>
+                        <span class="form-section-label">Tus datos de contacto</span>
+                    </div>
+                    <div class="row form-section-fields">
+                        <div class="col-12 col-lg-4 col-md-6 col-sm-12">
+                            <div class="form-group">
+                                <label><i class="fas fa-user"></i> ¿Cuál es tu nombre?</label>
+                                <input id="txtComplemento" type="text" class="form-control" placeholder="Tu nombre completo" />
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-4 col-md-6 col-sm-12">
+                            <div class="form-group">
+                                <label><i class="fas fa-phone"></i> Teléfono</label>
+                                <input id="txtCEP" type="tel" class="form-control" placeholder="Ej: 53000000" />
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-4 col-md-12 col-sm-12">
+                            <div class="form-group">
+                                <label><i class="fas fa-money-bill-wave"></i> Método de pago</label>
+                                <select id="ddlUf" class="form-control">
+                                    <option value="Pago en efectivo">Pago en efectivo</option>
+                                    <option value="Pago por transferencia (más el 15% por costo del producto)">Pago por transferencia (+15%)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="col-12 col-lg-4 col-md-4 col-sm-12">
-                    <div class="form-group">
-                        <label>Teléfono:</label>
-                        <input id="txtCEP" type="tel" class="form-control" placeholder="Ej: 53000000" />
-                    </div>
-                </div>
-
-                <div class="col-12 col-lg-4 col-md-4 col-sm-12">
-                    <div class="form-group">
-                        <label>Método de pago:</label>
-                        <select id="ddlUf" class="form-control">
-                            <option value="Pago en efectivo">Pago en efectivo</option>
-                            <option value="Pago por transferencia (más el 15% por costo del producto)">Pago por transferencia (+15%)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Bloque DOMICILIO: campos de dirección + municipio -->
-                <div id="bloqueDomicilio" class="col-12 bloque-entrega hidden">
+                <!-- SECCIÓN 3a: Bloque DOMICILIO -->
+                <div id="bloqueDomicilio" class="col-12 form-section bloque-entrega hidden">
                     <div class="bloque-entrega-header">
                         <i class="fas fa-map-marker-alt"></i>
                         <b>Dirección de entrega</b>
@@ -670,8 +690,8 @@
                     </div>
                 </div>
 
-                <!-- Bloque LOCAL: información del punto de recogida -->
-                <div id="bloqueLocal" class="col-12 bloque-entrega hidden">
+                <!-- SECCIÓN 3b: Bloque LOCAL -->
+                <div id="bloqueLocal" class="col-12 form-section bloque-entrega hidden">
                     <div class="bloque-entrega-header">
                         <i class="fas fa-store"></i>
                         <b>Recoger en el local</b>
@@ -696,34 +716,50 @@
             </div>
 
             <div id="resumoCarrinho" class="row mr-0 ml-0 animated fadeIn hidden">
+
+                <!-- RESUMEN: Productos -->
                 <div class="col-12">
-                    <p class="title-carrinho mt-4">
-                        <b>Ordenar productos:</b>
+                    <p class="resumo-section-title">
+                        <i class="fas fa-shopping-bag"></i>
+                        <b>Productos del pedido</b>
                     </p>
                 </div>
-
                 <div class="col-12">
                     <div class="row" id="listaItensResumo">
-
                     </div>
                 </div>
 
+                <!-- RESUMEN: Datos del cliente -->
                 <div class="col-12">
-                    <p class="title-carrinho mt-4">
-                        <b id="lblResumoTituloEntrega">Dirección de entrega:</b>
+                    <p class="resumo-section-title">
+                        <i class="fas fa-user-circle"></i>
+                        <b>Datos del cliente</b>
                     </p>
                 </div>
+                <div class="col-12">
+                    <div class="resumo-datos" id="resumoDatosCliente"></div>
+                </div>
 
-                <div class="col-12 item-carrinho resumo">
-                    <div class="img-map">
-                        <i class="fas fa-map-marked-alt" id="iconResumoEntrega"></i>
-                    </div>
-                    <div class="dados-produto">
-                        <p class="texto-endereco">
-                            <b id="resumoEndereco"></b>
-                        </p>
-                        <p class="cidade-endereco" id="cidadeEndereco"></p>
-                    </div>
+                <!-- RESUMEN: Entrega -->
+                <div class="col-12">
+                    <p class="resumo-section-title">
+                        <i class="fas fa-map-marked-alt" id="iconResumoSectionEntrega"></i>
+                        <b id="lblResumoTituloEntrega">Dirección de entrega</b>
+                    </p>
+                </div>
+                <div class="col-12">
+                    <div class="resumo-datos" id="resumoDatosEntrega"></div>
+                </div>
+
+                <!-- RESUMEN: Totales -->
+                <div class="col-12">
+                    <p class="resumo-section-title">
+                        <i class="fas fa-receipt"></i>
+                        <b>Totales</b>
+                    </p>
+                </div>
+                <div class="col-12">
+                    <div class="resumo-totais" id="resumoTotais"></div>
                 </div>
 
             </div>

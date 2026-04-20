@@ -476,6 +476,7 @@ cardapio.metodos = {
             $("#itensCarrinho").removeClass('hidden');
             $("#localEntrega").addClass('hidden');
             $("#resumoCarrinho").addClass('hidden');
+            // "accionesCarrinho" se controla en carregarCarrinho según haya items o no
 
             $(".etapa").removeClass('active');
             $(".etapa1").addClass('active');
@@ -489,6 +490,7 @@ cardapio.metodos = {
         if (etapa == 2) {
             $("#lblTituloEtapa").text('Dirección de entrega:');
             $("#itensCarrinho").addClass('hidden');
+            $("#accionesCarrinho").addClass('hidden');
             $("#localEntrega").removeClass('hidden');
             $("#resumoCarrinho").addClass('hidden');
 
@@ -505,6 +507,7 @@ cardapio.metodos = {
         if (etapa == 3) {
             $("#lblTituloEtapa").text('Resumen del pedido:');
             $("#itensCarrinho").addClass('hidden');
+            $("#accionesCarrinho").addClass('hidden');
             $("#localEntrega").addClass('hidden');
             $("#resumoCarrinho").removeClass('hidden');
 
@@ -537,6 +540,8 @@ cardapio.metodos = {
         if (MEU_CARRINHO.length > 0) {
 
             $("#itensCarrinho").html('');
+            // mostrar botón "Vaciar carrito"
+            $("#accionesCarrinho").removeClass('hidden');
 
             $.each(MEU_CARRINHO, (i, e) => {
 
@@ -558,9 +563,44 @@ cardapio.metodos = {
         }
         else {
             $("#itensCarrinho").html('<p class="carrinho-vazio"><i class="fa fa-shopping-bag"></i> Tu carrito está vacío.</p>');
+            // ocultar botón "Vaciar carrito" cuando no hay nada
+            $("#accionesCarrinho").addClass('hidden');
             cardapio.metodos.carregarValores();
         }
 
+    },
+
+    // vaciar el carrito completo (pide confirmación al usuario)
+    vaciarCarrinho: () => {
+
+        if (MEU_CARRINHO.length === 0) {
+            cardapio.metodos.mensagem('El carrito ya está vacío.');
+            return;
+        }
+
+        if (!confirm('¿Estás seguro de que deseas vaciar el carrito? Se eliminarán todos los productos.')) {
+            return;
+        }
+
+        // capturar ids antes de limpiar para actualizar las tarjetas del cardápio
+        let ids = MEU_CARRINHO.map(e => e.id);
+        MEU_CARRINHO = [];
+
+        // resetear estado de entrega relacionado con costos
+        VALOR_ENTREGA = 0;
+        MUNICIPIO_SELECCIONADO = null;
+        $("#lblMunicipioEntrega").text('');
+        $(".municipio-chip").removeClass('selected');
+        $(".municipio-chip input[type='radio']").prop('checked', false);
+
+        // quitar badge "en carrito" de las tarjetas visibles
+        ids.forEach((id) => cardapio.metodos.refrescarEstadoEnCarrito(id));
+
+        // refrescar vista del carrito (mostrará estado vacío y valores en 0)
+        cardapio.metodos.carregarCarrinho();
+        cardapio.metodos.atualizarBadgeTotal();
+
+        cardapio.metodos.mensagem('Carrito vaciado correctamente.', 'green');
     },
 
     // diminuir quantidade do item no carrinho
@@ -638,17 +678,23 @@ cardapio.metodos = {
             VALOR_CARRINHO += parseFloat(e.price * e.qntd);
         });
 
-        // costo de entrega solo aplica si se eligió "domicilio" CON municipio
-        let costoEntrega = (TIPO_ENTREGA === 'domicilio' && MUNICIPIO_SELECCIONADO)
+        // si el carrito está vacío, todo queda en 0 (Subtotal, Entrega y Total)
+        let carritoVacio = MEU_CARRINHO.length === 0;
+
+        // costo de entrega solo aplica si el carrito tiene items y se eligió "domicilio" CON municipio
+        let costoEntrega = (!carritoVacio && TIPO_ENTREGA === 'domicilio' && MUNICIPIO_SELECCIONADO)
             ? VALOR_ENTREGA
             : 0;
 
-        $("#lblSubTotal").text(`MN$ ${VALOR_CARRINHO.toFixed(2).replace('.', ',')}`);
-        $("#lblValorEntrega").text(`+ MN$ ${costoEntrega.toFixed(2).replace('.', ',')}`);
-        $("#lblValorTotal").text(`MN$ ${(VALOR_CARRINHO + costoEntrega).toFixed(2).replace('.', ',')}`);
+        let subtotalMostrar = carritoVacio ? 0 : VALOR_CARRINHO;
+        let totalMostrar = carritoVacio ? 0 : (VALOR_CARRINHO + costoEntrega);
 
-        // mostrar/ocultar la fila "Entrega"
-        if (TIPO_ENTREGA === 'domicilio' && MUNICIPIO_SELECCIONADO) {
+        $("#lblSubTotal").text(`MN$ ${subtotalMostrar.toFixed(2).replace('.', ',')}`);
+        $("#lblValorEntrega").text(`+ MN$ ${costoEntrega.toFixed(2).replace('.', ',')}`);
+        $("#lblValorTotal").text(`MN$ ${totalMostrar.toFixed(2).replace('.', ',')}`);
+
+        // mostrar la fila "Entrega" solo si el carrito tiene items y hay un costo a mostrar
+        if (!carritoVacio && TIPO_ENTREGA === 'domicilio' && MUNICIPIO_SELECCIONADO) {
             $("#filaEntrega").removeClass('hidden');
         } else {
             $("#filaEntrega").addClass('hidden');
@@ -849,92 +895,177 @@ cardapio.metodos = {
 
     },
 
+    // escapar HTML para evitar inyección al imprimir datos del usuario
+    escaparHTML: (texto) => {
+        if (texto == null) return '';
+        return String(texto)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
+
+    // construye una fila de "dato" para el resumen
+    filaResumo: (icono, etiqueta, valor) => {
+        let val = cardapio.metodos.escaparHTML(valor);
+        return `
+            <div class="resumo-dato-row">
+                <span class="resumo-dato-icon"><i class="${icono}"></i></span>
+                <span class="resumo-dato-label">${etiqueta}</span>
+                <span class="resumo-dato-value">${val}</span>
+            </div>
+        `;
+    },
+
     // carrega a etapa de Resumo do pedido
     carregarResumo: () => {
 
+        // --- PRODUCTOS ---
         $("#listaItensResumo").html('');
-
         $.each(MEU_CARRINHO, (i, e) => {
-
             let temp = cardapio.templates.itemResumo.replace(/\${img}/g, e.img)
                 .replace(/\${nome}/g, e.name)
                 .replace(/\${preco}/g, e.price.toFixed(2).replace('.', ','))
-                .replace(/\${qntd}/g, e.qntd)
-
+                .replace(/\${qntd}/g, e.qntd);
             $("#listaItensResumo").append(temp);
-
         });
 
-        if (MEU_ENDERECO && MEU_ENDERECO.tipo === 'domicilio') {
-            $("#lblResumoTituloEntrega").text('Dirección de entrega:');
-            $("#iconResumoEntrega").attr('class', 'fas fa-map-marked-alt');
-            $("#resumoEndereco").html(`${MEU_ENDERECO.endereco}, #${MEU_ENDERECO.numero}, ${MEU_ENDERECO.bairro}`);
-            $("#cidadeEndereco").html(
-                `Municipio: <b>${MEU_ENDERECO.municipio}</b> &middot; ${MEU_ENDERECO.cidade} ` +
-                `/ ${MEU_ENDERECO.complemento} / teléf: ${MEU_ENDERECO.cep} ` +
-                `/ Pago: ${MEU_ENDERECO.uf}`
-            );
-        } else if (MEU_ENDERECO && MEU_ENDERECO.tipo === 'local') {
-            $("#lblResumoTituloEntrega").text('Recogida en el local:');
-            $("#iconResumoEntrega").attr('class', 'fas fa-store');
-            $("#resumoEndereco").html(`Farmacia Habana &mdash; Calle 23 #456 entre E y F, Vedado, Plaza de la Revolución.`);
-            $("#cidadeEndereco").html(
-                `Cliente: <b>${MEU_ENDERECO.complemento}</b> / Teléf: ${MEU_ENDERECO.cep} ` +
-                `/ Pago: ${MEU_ENDERECO.uf} <span class="tag-gratis">Entrega gratis</span>`
-            );
+        // --- DATOS DEL CLIENTE ---
+        let clienteHTML = '';
+        if (MEU_ENDERECO) {
+            clienteHTML += cardapio.metodos.filaResumo('fas fa-user', 'Nombre:', MEU_ENDERECO.complemento);
+            clienteHTML += cardapio.metodos.filaResumo('fas fa-phone', 'Teléfono:', MEU_ENDERECO.cep);
+            clienteHTML += cardapio.metodos.filaResumo('fas fa-money-bill-wave', 'Método de pago:', MEU_ENDERECO.uf);
         }
+        $("#resumoDatosCliente").html(clienteHTML);
+
+        // --- ENTREGA ---
+        let entregaHTML = '';
+        if (MEU_ENDERECO && MEU_ENDERECO.tipo === 'domicilio') {
+            $("#lblResumoTituloEntrega").text('Entrega a domicilio');
+            $("#iconResumoSectionEntrega").attr('class', 'fas fa-motorcycle');
+
+            entregaHTML += cardapio.metodos.filaResumo('fas fa-truck', 'Modalidad:', 'Entrega a domicilio');
+            entregaHTML += cardapio.metodos.filaResumo('fas fa-road', 'Dirección:', MEU_ENDERECO.endereco);
+            entregaHTML += cardapio.metodos.filaResumo('fas fa-hashtag', 'Número:', MEU_ENDERECO.numero);
+            entregaHTML += cardapio.metodos.filaResumo('fas fa-map-signs', 'Reparto / Barrio:', MEU_ENDERECO.bairro);
+            entregaHTML += cardapio.metodos.filaResumo('fas fa-map-marker-alt', 'Municipio:', MEU_ENDERECO.municipio);
+            entregaHTML += cardapio.metodos.filaResumo('fas fa-city', 'Ciudad:', MEU_ENDERECO.cidade);
+        } else if (MEU_ENDERECO && MEU_ENDERECO.tipo === 'local') {
+            $("#lblResumoTituloEntrega").text('Recogida en el local');
+            $("#iconResumoSectionEntrega").attr('class', 'fas fa-store');
+
+            entregaHTML += cardapio.metodos.filaResumo('fas fa-store', 'Modalidad:', 'Recoger en el local');
+            entregaHTML += cardapio.metodos.filaResumo('fas fa-clinic-medical', 'Local:', 'Farmacia Habana');
+            entregaHTML += cardapio.metodos.filaResumo('fas fa-map-marker-alt', 'Dirección:', 'Calle 23 #456 entre E y F, Vedado, Plaza de la Revolución, La Habana');
+            entregaHTML += cardapio.metodos.filaResumo('far fa-clock', 'Horario:', 'Lun a Sáb, 9:00 AM - 7:00 PM');
+        }
+        $("#resumoDatosEntrega").html(entregaHTML);
+
+        // --- TOTALES ---
+        let costoEntrega = (MEU_ENDERECO && MEU_ENDERECO.costoEntrega) || 0;
+        let esDomicilio = MEU_ENDERECO && MEU_ENDERECO.tipo === 'domicilio';
+        let totalFinal = VALOR_CARRINHO + costoEntrega;
+
+        let totaisHTML = '';
+        totaisHTML += `
+            <div class="resumo-total-row">
+                <span class="resumo-total-label">Subtotal</span>
+                <span class="resumo-total-value">MN$ ${VALOR_CARRINHO.toFixed(2).replace('.', ',')}</span>
+            </div>
+        `;
+        if (esDomicilio) {
+            totaisHTML += `
+                <div class="resumo-total-row">
+                    <span class="resumo-total-label"><i class="fas fa-motorcycle"></i> Envío (${cardapio.metodos.escaparHTML(MEU_ENDERECO.municipio)})</span>
+                    <span class="resumo-total-value">MN$ ${costoEntrega.toFixed(2).replace('.', ',')}</span>
+                </div>
+            `;
+        } else {
+            totaisHTML += `
+                <div class="resumo-total-row">
+                    <span class="resumo-total-label"><i class="fas fa-store"></i> Envío (recogida en local)</span>
+                    <span class="resumo-total-value"><span class="tag-gratis">Gratis</span></span>
+                </div>
+            `;
+        }
+        totaisHTML += `
+            <div class="resumo-total-row resumo-total-final">
+                <span class="resumo-total-label">TOTAL A PAGAR</span>
+                <span class="resumo-total-value">MN$ ${totalFinal.toFixed(2).replace('.', ',')}</span>
+            </div>
+        `;
+        $("#resumoTotais").html(totaisHTML);
 
         cardapio.metodos.finalizarPedido();
 
     },
 
-    // Atualiza o link do botão do WhatsApp
+    // Atualiza o link do botão do WhatsApp (mensaje detallado y organizado)
     finalizarPedido: () => {
 
-        if (MEU_CARRINHO.length > 0 && MEU_ENDERECO != null) {
+        if (MEU_CARRINHO.length <= 0 || MEU_ENDERECO == null) return;
 
-            let costoEntrega = MEU_ENDERECO.costoEntrega || 0;
+        let costoEntrega = MEU_ENDERECO.costoEntrega || 0;
+        let total = VALOR_CARRINHO + costoEntrega;
+        let esDomicilio = MEU_ENDERECO.tipo === 'domicilio';
 
-            var texto = '¡Hola! quisiera hacer un pedido:';
-            texto += `\n*Ordenar artículos:*\n\n\${itens}`;
+        let separador = '━━━━━━━━━━━━━━━━━━';
+        let texto = '';
 
-            if (MEU_ENDERECO.tipo === 'domicilio') {
-                texto += '\n*Entrega a domicilio:*';
-                texto += `\n${MEU_ENDERECO.endereco}, #${MEU_ENDERECO.numero}, ${MEU_ENDERECO.bairro}`;
-                texto += `\n / Municipio: *${MEU_ENDERECO.municipio}* / Ciudad: ${MEU_ENDERECO.cidade}`;
-                texto += `\n / Remitente: ${MEU_ENDERECO.complemento} / Teléf: ${MEU_ENDERECO.cep} / Pago: ${MEU_ENDERECO.uf}`;
-                texto += `\n\n*Subtotal:* MN$ ${VALOR_CARRINHO.toFixed(2).replace('.', ',')}`;
-                texto += `\n*Envío (${MEU_ENDERECO.municipio}):* MN$ ${costoEntrega.toFixed(2).replace('.', ',')}`;
-                texto += `\n*Total:* MN$ ${(VALOR_CARRINHO + costoEntrega).toFixed(2).replace('.', ',')}`;
-            } else {
-                texto += '\n*Recogida en el local:*';
-                texto += `\nFarmacia Habana - Calle 23 #456 entre E y F, Vedado, Plaza de la Revolución`;
-                texto += `\n / Cliente: ${MEU_ENDERECO.complemento} / Teléf: ${MEU_ENDERECO.cep} / Pago: ${MEU_ENDERECO.uf}`;
-                texto += `\n\n*Total:* MN$ ${VALOR_CARRINHO.toFixed(2).replace('.', ',')} (Entrega gratis)`;
-            }
+        texto += '*NUEVO PEDIDO - Cabrera\'s Shop*\n';
+        texto += separador + '\n\n';
 
-            var itens = '';
+        // --- Productos ---
+        texto += '*PRODUCTOS DEL PEDIDO:*\n';
+        $.each(MEU_CARRINHO, (i, e) => {
+            let subtotalItem = (e.price * e.qntd).toFixed(2).replace('.', ',');
+            let precioUnit = e.price.toFixed(2).replace('.', ',');
+            texto += `\n• *${e.qntd}x* ${e.name}`;
+            texto += `\n    Precio: MN$ ${precioUnit} c/u`;
+            texto += `\n    Subtotal: MN$ ${subtotalItem}`;
+        });
+        texto += '\n\n' + separador + '\n\n';
 
-            $.each(MEU_CARRINHO, (i, e) => {
+        // --- Datos del cliente ---
+        texto += '*DATOS DEL CLIENTE:*\n';
+        texto += `• *Nombre:* ${MEU_ENDERECO.complemento}\n`;
+        texto += `• *Teléfono:* ${MEU_ENDERECO.cep}\n`;
+        texto += `• *Método de pago:* ${MEU_ENDERECO.uf}\n`;
+        texto += '\n' + separador + '\n\n';
 
-                itens += `*${e.qntd}x* ${e.name} ....... MN$ ${e.price.toFixed(2).replace('.', ',')} \n`;
-
-                // último item
-                if ((i + 1) == MEU_CARRINHO.length) {
-
-                    texto = texto.replace(/\${itens}/g, itens);
-
-                    // converte a URL
-                    let encode = encodeURI(texto);
-                    let URL = `https://wa.me/${CELULAR_EMPRESA}?text=${encode}`;
-
-                    $("#btnEtapaResumo").attr('href', URL);
-
-                }
-
-            })
-
+        // --- Entrega ---
+        if (esDomicilio) {
+            texto += '*ENTREGA A DOMICILIO:*\n';
+            texto += `• *Dirección:* ${MEU_ENDERECO.endereco}\n`;
+            texto += `• *Número:* ${MEU_ENDERECO.numero}\n`;
+            texto += `• *Reparto / Barrio:* ${MEU_ENDERECO.bairro}\n`;
+            texto += `• *Municipio:* ${MEU_ENDERECO.municipio}\n`;
+            texto += `• *Ciudad:* ${MEU_ENDERECO.cidade}\n`;
+        } else {
+            texto += '*RECOGIDA EN EL LOCAL:*\n';
+            texto += `• *Local:* Farmacia Habana\n`;
+            texto += `• *Dirección:* Calle 23 #456 entre E y F, Vedado, Plaza de la Revolución, La Habana\n`;
+            texto += `• *Horario:* Lun a Sáb, 9:00 AM - 7:00 PM\n`;
         }
+        texto += '\n' + separador + '\n\n';
+
+        // --- Totales ---
+        texto += '*RESUMEN DE PAGO:*\n';
+        texto += `• *Subtotal:* MN$ ${VALOR_CARRINHO.toFixed(2).replace('.', ',')}\n`;
+        if (esDomicilio) {
+            texto += `• *Envío (${MEU_ENDERECO.municipio}):* MN$ ${costoEntrega.toFixed(2).replace('.', ',')}\n`;
+        } else {
+            texto += `• *Envío:* Gratis (recogida en local)\n`;
+        }
+        texto += `\n*TOTAL A PAGAR: MN$ ${total.toFixed(2).replace('.', ',')}*\n`;
+
+        // converte a URL
+        let encode = encodeURIComponent(texto);
+        let URL = `https://wa.me/${CELULAR_EMPRESA}?text=${encode}`;
+
+        $("#btnEtapaResumo").attr('href', URL);
 
     },
 
