@@ -6,8 +6,11 @@ var cardapio = {};
 
 var MEU_CARRINHO = [];
 
-// Tipo de entrega seleccionado: 'domicilio' | 'local'. Por defecto "local".
-var TIPO_ENTREGA = 'local';
+// Tipo de entrega seleccionado: 'domicilio' | 'local' | null. Por defecto ninguno.
+var TIPO_ENTREGA = null;
+
+// Número de orden actual (se genera al pasar al resumen del pedido)
+var NUMERO_ORDEN = null;
 
 // Municipio seleccionado para la entrega a domicilio
 var MUNICIPIO_SELECCIONADO = null;
@@ -521,6 +524,9 @@ cardapio.metodos = {
             $("#btnEtapaEndereco").addClass('hidden');
             $("#btnEtapaResumo").addClass('hidden');
             $("#btnVoltar").addClass('hidden');
+
+            // mostrar Subtotal / Total en el carrito
+            $(".m-footer .container-total").removeClass('hidden');
         }
         
         if (etapa == 2) {
@@ -538,6 +544,9 @@ cardapio.metodos = {
             $("#btnEtapaEndereco").removeClass('hidden');
             $("#btnEtapaResumo").addClass('hidden');
             $("#btnVoltar").removeClass('hidden');
+
+            // en esta etapa NO se muestran Subtotal ni Total
+            $(".m-footer .container-total").addClass('hidden');
         }
 
         if (etapa == 3) {
@@ -556,6 +565,9 @@ cardapio.metodos = {
             $("#btnEtapaEndereco").addClass('hidden');
             $("#btnEtapaResumo").removeClass('hidden');
             $("#btnVoltar").removeClass('hidden');
+
+            // los totales ya se muestran dentro del resumen, ocultamos la barra inferior
+            $(".m-footer .container-total").addClass('hidden');
         }
 
     },
@@ -749,15 +761,20 @@ cardapio.metodos = {
         cardapio.metodos.carregarEtapa(2);
         cardapio.metodos.renderMunicipios();
 
-        // por defecto está preseleccionada la opción "local" en el HTML.
-        // Si ya se hizo una elección previa, restaurarla visualmente.
-        $(`input[name='tipoEntrega'][value='${TIPO_ENTREGA}']`).prop('checked', true);
-        $(".tipo-entrega-card").removeClass('selected');
-        $(`.tipo-entrega-card[data-tipo='${TIPO_ENTREGA}']`).addClass('selected');
+        // no preseleccionar ninguna opción por defecto
+        if (TIPO_ENTREGA) {
+            $(`input[name='tipoEntrega'][value='${TIPO_ENTREGA}']`).prop('checked', true);
+            $(".tipo-entrega-card").removeClass('selected');
+            $(`.tipo-entrega-card[data-tipo='${TIPO_ENTREGA}']`).addClass('selected');
+            cardapio.metodos.refrescarVistaEntrega();
+        } else {
+            $("input[name='tipoEntrega']").prop('checked', false);
+            $(".tipo-entrega-card").removeClass('selected');
+            $("#resumenDireccionConfirmada").addClass('hidden');
+        }
 
-        // refrescar vista de la entrega seleccionada
-        cardapio.metodos.refrescarVistaEntrega();
-
+        // el botón "Revisar pedido" arranca deshabilitado hasta completar los datos
+        cardapio.metodos.actualizarEstadoBotonRevisar();
     },
 
     // ============================================================
@@ -795,6 +812,7 @@ cardapio.metodos = {
 
         cardapio.metodos.refrescarVistaEntrega();
         cardapio.metodos.carregarValores();
+        cardapio.metodos.actualizarEstadoBotonRevisar();
     },
 
     // Refresca el resumen visible debajo de las tarjetas de tipo de entrega
@@ -828,14 +846,14 @@ cardapio.metodos = {
             $icon.attr('class', 'fas fa-motorcycle');
             $titulo.text('Dirección de entrega');
             $subtitulo.text('Completa los datos para entregarte el pedido a domicilio');
-            $btnTxt.text('Guardar dirección');
+            $btnTxt.text('Confirmar pedido');
 
             $("#modalContentDomicilio").removeClass('hidden');
         } else {
             $icon.attr('class', 'fas fa-store');
             $titulo.text('Recoger en el local');
             $subtitulo.text('Revisa la información del punto de recogida');
-            $btnTxt.text('Entendido, continuar');
+            $btnTxt.text('Confirmar pedido');
 
             $("#modalContentLocal").removeClass('hidden');
         }
@@ -861,46 +879,121 @@ cardapio.metodos = {
     },
     cerrarModalDireccion: () => cardapio.metodos.cerrarModalEntrega(),
 
-    // Botón "Confirmar/Guardar" del modal
-    confirmarEntrega: () => {
+    // Verifica (sin mostrar mensajes) que TODOS los datos requeridos estén completos
+    // según el tipo de entrega seleccionado. Devuelve true/false.
+    datosEntregaCompletos: () => {
+        if (!TIPO_ENTREGA) return false;
+
+        // datos de contacto (ambos tipos)
+        let nombre = ($("#txtComplemento").val() || '').trim();
+        if (nombre.length <= 0) return false;
+
+        let tel = cardapio.metodos.validarTelefono();
+        if (!tel.ok) return false;
+
+        // método de pago (ambos tipos)
+        let metodoChecked = $("input[name='metodoPago']:checked").val();
+        if (!metodoChecked) return false;
+
+        // domicilio: dirección, barrio y municipio
         if (TIPO_ENTREGA === 'domicilio') {
-            cardapio.metodos.guardarDireccion();
+            let endereco = ($("#txtEndereco").val() || '').trim();
+            let bairro = ($("#txtBairro").val() || '').trim();
+            if (endereco.length <= 0) return false;
+            if (bairro.length <= 0) return false;
+            if (!MUNICIPIO_SELECCIONADO) return false;
+        }
+
+        return true;
+    },
+
+    // Habilita / deshabilita el botón "Revisar pedido" según estén completos los datos.
+    actualizarEstadoBotonRevisar: () => {
+        let $btn = $("#btnEtapaEndereco");
+        if ($btn.length === 0) return;
+        if (cardapio.metodos.datosEntregaCompletos()) {
+            $btn.removeClass('btn-disabled').attr('aria-disabled', 'false');
         } else {
-            // local: solo cerrar y mostrar el resumen
-            cardapio.metodos.cerrarModalEntrega();
-            cardapio.metodos.actualizarResumenEntregaLocal();
-            cardapio.metodos.mensagem('Recogida en el local confirmada.', 'green');
+            $btn.addClass('btn-disabled').attr('aria-disabled', 'true');
         }
     },
 
-    // Valida y guarda la dirección desde el modal (domicilio)
-    guardarDireccion: () => {
+    // Valida datos de contacto y método de pago (sección compartida dentro del modal)
+    validarDatosContactoModal: () => {
 
-        let endereco = $("#txtEndereco").val().trim();
-        let bairro = $("#txtBairro").val().trim();
+        let complemento = $("#txtComplemento").val().trim();
+        if (complemento.length <= 0) {
+            cardapio.metodos.mensagem('El campo "¿Cuál es tu nombre?" es obligatorio.');
+            $("#txtComplemento").trigger('focus');
+            return false;
+        }
 
-        if (endereco.length <= 0) {
-            cardapio.metodos.mensagem('El campo Dirección (calle) es obligatorio.');
-            $("#txtEndereco").trigger('focus');
+        let tel = cardapio.metodos.validarTelefono();
+        if (!tel.ok) {
+            cardapio.metodos.mensagem(tel.msg);
+            cardapio.metodos.validarTelefonoEnVivo();
+            $("#txtCEP").trigger('focus');
+            return false;
+        }
+
+        // método de pago: se valida que haya uno seleccionado
+        let metodoChecked = $("input[name='metodoPago']:checked").val();
+        if (!metodoChecked) {
+            cardapio.metodos.mensagem('Selecciona un método de pago.');
+            return false;
+        }
+
+        return true;
+    },
+
+    // Botón "Confirmar/Guardar" del modal
+    confirmarEntrega: () => {
+
+        // primero valida lo específico del tipo de entrega
+        if (TIPO_ENTREGA === 'domicilio') {
+            let endereco = $("#txtEndereco").val().trim();
+            let bairro = $("#txtBairro").val().trim();
+
+            if (endereco.length <= 0) {
+                cardapio.metodos.mensagem('El campo Dirección (calle) es obligatorio.');
+                $("#txtEndereco").trigger('focus');
+                return;
+            }
+            if (bairro.length <= 0) {
+                cardapio.metodos.mensagem('El campo Reparto / Barrio es obligatorio.');
+                $("#txtBairro").trigger('focus');
+                return;
+            }
+            if (!MUNICIPIO_SELECCIONADO) {
+                cardapio.metodos.mensagem('Selecciona el municipio de La Habana para calcular el envío.');
+                return;
+            }
+        } else if (TIPO_ENTREGA !== 'local') {
+            cardapio.metodos.mensagem('Selecciona cómo deseas recibir tu pedido.');
             return;
         }
 
-        if (bairro.length <= 0) {
-            cardapio.metodos.mensagem('El campo Reparto / Barrio es obligatorio.');
-            $("#txtBairro").trigger('focus');
+        // después valida datos de contacto y método de pago (comunes a ambos)
+        if (!cardapio.metodos.validarDatosContactoModal()) {
             return;
         }
 
-        if (!MUNICIPIO_SELECCIONADO) {
-            cardapio.metodos.mensagem('Selecciona el municipio de La Habana para calcular el envío.');
-            return;
-        }
-
-        // todo ok, cerrar y reflejar
+        // cerrar modal y reflejar
         cardapio.metodos.cerrarModalEntrega();
-        cardapio.metodos.actualizarResumenDireccionConfirmada();
+        if (TIPO_ENTREGA === 'domicilio') {
+            cardapio.metodos.actualizarResumenDireccionConfirmada();
+            cardapio.metodos.mensagem('Dirección guardada correctamente.', 'green');
+        } else {
+            cardapio.metodos.actualizarResumenEntregaLocal();
+            cardapio.metodos.mensagem('Recogida en el local confirmada.', 'green');
+        }
         cardapio.metodos.carregarValores();
-        cardapio.metodos.mensagem('Dirección guardada correctamente.', 'green');
+        cardapio.metodos.actualizarEstadoBotonRevisar();
+    },
+
+    // (compatibilidad) guardar dirección desde el modal
+    guardarDireccion: () => {
+        cardapio.metodos.confirmarEntrega();
     },
 
     // Muestra el resumen de la dirección confirmada (domicilio) debajo de las tarjetas
@@ -947,6 +1040,8 @@ cardapio.metodos = {
         } else {
             $("#ddlUf").val('Pago en efectivo');
         }
+
+        cardapio.metodos.actualizarEstadoBotonRevisar();
     },
 
     // ============================================================
@@ -1065,6 +1160,7 @@ cardapio.metodos = {
 
         $("#lblMunicipioEntrega").text(`(${muni.nome})`);
         cardapio.metodos.carregarValores();
+        cardapio.metodos.actualizarEstadoBotonRevisar();
     },
 
     // (legacy) API ViaCEP: no se usa en Cuba, conservado como no-op para compatibilidad
@@ -1072,8 +1168,24 @@ cardapio.metodos = {
         $("#txtCEP").focus();
     },
 
+    // genera un número de orden único (distinto en cada pedido)
+    generarNumeroOrden: () => {
+        let d = new Date();
+        let pad = (n, l = 2) => String(n).padStart(l, '0');
+        let fecha = `${String(d.getFullYear()).slice(-2)}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+        let hora = `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+        let rand = Math.floor(Math.random() * 9000) + 1000;
+        return `FH-${fecha}-${hora}-${rand}`;
+    },
+
     // validação antes de prosseguir para a etapa 3
     resumoPedido: () => {
+
+        // si el botón está deshabilitado, ignorar el click
+        if ($("#btnEtapaEndereco").hasClass('btn-disabled')) {
+            cardapio.metodos.mensagem('Completa todos los datos de la entrega antes de continuar.');
+            return;
+        }
 
         // 0. tipo de entrega es obligatorio
         if (!TIPO_ENTREGA) {
@@ -1084,10 +1196,10 @@ cardapio.metodos = {
         let uf = $("#ddlUf").val().trim();
         let complemento = $("#txtComplemento").val().trim();
 
-        // nombre obligatorio
+        // nombre obligatorio (por si el modal no se confirmó)
         if (complemento.length <= 0) {
-            cardapio.metodos.mensagem('El campo "¿Cuál es tu nombre?" es obligatorio.');
-            $("#txtComplemento").focus();
+            cardapio.metodos.mensagem('Completa tus datos de contacto antes de continuar.');
+            cardapio.metodos.abrirModalEntrega();
             return;
         }
 
@@ -1095,8 +1207,7 @@ cardapio.metodos = {
         let tel = cardapio.metodos.validarTelefono();
         if (!tel.ok) {
             cardapio.metodos.mensagem(tel.msg);
-            cardapio.metodos.validarTelefonoEnVivo();
-            $("#txtCEP").focus();
+            cardapio.metodos.abrirModalEntrega();
             return;
         }
 
@@ -1143,6 +1254,9 @@ cardapio.metodos = {
             };
         }
 
+        // generar un nuevo número de orden único para este pedido
+        NUMERO_ORDEN = cardapio.metodos.generarNumeroOrden();
+
         cardapio.metodos.carregarEtapa(3);
         cardapio.metodos.carregarResumo();
 
@@ -1174,6 +1288,9 @@ cardapio.metodos = {
     // carrega a etapa de Resumo do pedido
     carregarResumo: () => {
 
+        // --- NÚMERO DE ORDEN ---
+        $("#lblNumeroOrden").text(NUMERO_ORDEN || '—');
+
         // --- PRODUCTOS ---
         $("#listaItensResumo").html('');
         $.each(MEU_CARRINHO, (i, e) => {
@@ -1186,7 +1303,8 @@ cardapio.metodos = {
 
         // --- DATOS DEL CLIENTE ---
         let esTransferencia = MEU_ENDERECO && MEU_ENDERECO.uf === 'Pago por transferencia';
-        let recargoTransferencia = esTransferencia ? (VALOR_CARRINHO * 0.15) : 0;
+        // Transferencia NO aplica ningún recargo adicional sobre los productos.
+        let recargoTransferencia = 0;
 
         let clienteHTML = '';
         if (MEU_ENDERECO) {
@@ -1197,11 +1315,7 @@ cardapio.metodos = {
                 telDisplay = `${MEU_ENDERECO.telefonoPais.code} ${MEU_ENDERECO.telefonoDigitos} (${MEU_ENDERECO.telefonoPais.name})`;
             }
             clienteHTML += cardapio.metodos.filaResumo('fas fa-phone', 'Teléfono:', telDisplay);
-            let metodoPagoLabel = MEU_ENDERECO.uf;
-            if (esTransferencia) {
-                metodoPagoLabel += ' (se añade 15% de recargo)';
-            }
-            clienteHTML += cardapio.metodos.filaResumo('fas fa-money-bill-wave', 'Método de pago:', metodoPagoLabel);
+            clienteHTML += cardapio.metodos.filaResumo('fas fa-money-bill-wave', 'Método de pago:', MEU_ENDERECO.uf);
         }
         $("#resumoDatosCliente").html(clienteHTML);
 
@@ -1239,14 +1353,6 @@ cardapio.metodos = {
                 <span class="resumo-total-value">MN$ ${VALOR_CARRINHO.toFixed(2).replace('.', ',')}</span>
             </div>
         `;
-        if (esTransferencia) {
-            totaisHTML += `
-                <div class="resumo-total-row resumo-total-transferencia">
-                    <span class="resumo-total-label"><i class="fas fa-university"></i> Recargo por transferencia (15%)</span>
-                    <span class="resumo-total-value">+ MN$ ${recargoTransferencia.toFixed(2).replace('.', ',')}</span>
-                </div>
-            `;
-        }
         if (esDomicilio) {
             totaisHTML += `
                 <div class="resumo-total-row">
@@ -1282,14 +1388,18 @@ cardapio.metodos = {
         let costoEntrega = MEU_ENDERECO.costoEntrega || 0;
         let esDomicilio = MEU_ENDERECO.tipo === 'domicilio';
         let esTransferencia = MEU_ENDERECO.uf === 'Pago por transferencia';
-        let recargoTransferencia = esTransferencia ? (VALOR_CARRINHO * 0.15) : 0;
-        let total = VALOR_CARRINHO + costoEntrega + recargoTransferencia;
+        // Transferencia NO aplica ningún recargo adicional sobre los productos.
+        let recargoTransferencia = 0;
+        let total = VALOR_CARRINHO + costoEntrega;
 
         let fmt = (n) => n.toFixed(2).replace('.', ',');
         let separador = '━━━━━━━━━━━━━━━━━━';
         let texto = '';
 
         texto += '*NUEVO PEDIDO - Cabrera\'s Shop*\n';
+        if (NUMERO_ORDEN) {
+            texto += `*N° de orden:* ${NUMERO_ORDEN}\n`;
+        }
         texto += separador + '\n\n';
 
         // --- Productos (desglosados con precio unitario, cantidad y subtotal) ---
@@ -1314,9 +1424,6 @@ cardapio.metodos = {
         }
         texto += `• *Teléfono:* ${telText}\n`;
         texto += `• *Método de pago:* ${MEU_ENDERECO.uf}`;
-        if (esTransferencia) {
-            texto += `\n   _Se aplica un recargo del 15% sobre el subtotal de los productos: +MN$ ${fmt(recargoTransferencia)}_`;
-        }
         texto += '\n\n' + separador + '\n\n';
 
         // --- Entrega ---
@@ -1339,19 +1446,12 @@ cardapio.metodos = {
         // --- Resumen de pago (desglose completo) ---
         texto += '*RESUMEN DE PAGO:*\n';
         texto += `• Subtotal productos: MN$ ${fmt(VALOR_CARRINHO)}\n`;
-        if (esTransferencia) {
-            texto += `• Recargo por transferencia (15%): +MN$ ${fmt(recargoTransferencia)}\n`;
-        }
         if (esDomicilio) {
             texto += `• Envío (${MEU_ENDERECO.municipio}): +MN$ ${fmt(costoEntrega)}\n`;
         } else {
             texto += `• Envío (recogida en local): Gratis\n`;
         }
         texto += `\n*TOTAL A PAGAR: MN$ ${fmt(total)}*\n`;
-
-        if (esTransferencia) {
-            texto += '\n_Nota: el 15% de recargo corresponde al método de pago por transferencia y ya está incluido en el total._\n';
-        }
 
         // converte a URL
         let encode = encodeURIComponent(texto);
