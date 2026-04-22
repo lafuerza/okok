@@ -115,9 +115,6 @@ cardapio.eventos = {
         // poblar el selector de código de país (teléfono)
         cardapio.metodos.renderCodigosPais();
 
-        // inicializar el efecto scroll-reveal para los botones del footer
-        cardapio.metodos.initScrollRevealFooters();
-
         // cerrar lightbox con la tecla ESC
         $(document).on('keydown', (ev) => {
             if (ev.key === 'Escape' || ev.keyCode === 27) {
@@ -139,98 +136,6 @@ cardapio.eventos = {
 }
 
 cardapio.metodos = {
-
-    // =========================================================
-    // SCROLL-REVEAL: Mostrar los botones del footer al hacer scroll hasta el final
-    // =========================================================
-    initScrollRevealFooters: () => {
-        // Footer principal de la página (Volver, Continuar, Revisar, Enviar)
-        const $mainFooter = $("#mainFooterAcciones");
-        const $window = $(window);
-        const $document = $(document);
-
-        // Función para verificar si estamos cerca del final de la página
-        const checkMainScroll = () => {
-            const scrollTop = $window.scrollTop();
-            const windowHeight = $window.height();
-            const documentHeight = $document.height();
-            const scrollThreshold = 100; // píxeles desde el final
-
-            // Si estamos a menos de 100px del final, mostrar los botones
-            if (scrollTop + windowHeight >= documentHeight - scrollThreshold) {
-                $mainFooter.addClass('revealed');
-            } else {
-                $mainFooter.removeClass('revealed');
-            }
-        };
-
-        // Escuchar el evento de scroll en la ventana
-        $window.on('scroll.scrollReveal', checkMainScroll);
-        // También verificar al cargar
-        checkMainScroll();
-
-        // Footer del modal de dirección (Cancelar, Confirmar)
-        const $modalBody = $(".modal-direccion-body");
-        const $modalFooter = $("#modalDireccionFooter");
-
-        $modalBody.on('scroll.scrollRevealModal', function () {
-            const scrollTop = $(this).scrollTop();
-            const scrollHeight = this.scrollHeight;
-            const clientHeight = $(this).innerHeight();
-            const scrollThreshold = 50; // píxeles desde el final
-
-            // Si estamos cerca del final del scroll del modal
-            if (scrollTop + clientHeight >= scrollHeight - scrollThreshold) {
-                $modalFooter.addClass('revealed');
-            } else {
-                $modalFooter.removeClass('revealed');
-            }
-        });
-    },
-
-    // Resetear el estado del scroll-reveal del modal cuando se abre
-    resetScrollRevealModal: () => {
-        const $modalFooter = $("#modalDireccionFooter");
-        $modalFooter.removeClass('revealed');
-        
-        // Disparar una verificación después de que el modal se renderice
-        setTimeout(() => {
-            const $modalBody = $(".modal-direccion-body");
-            if ($modalBody.length > 0) {
-                const scrollTop = $modalBody.scrollTop();
-                const scrollHeight = $modalBody[0].scrollHeight;
-                const clientHeight = $modalBody.innerHeight();
-                const scrollThreshold = 50;
-
-                // Si el contenido no requiere scroll (ya estamos al final)
-                if (scrollHeight <= clientHeight + scrollThreshold) {
-                    $modalFooter.addClass('revealed');
-                } else if (scrollTop + clientHeight >= scrollHeight - scrollThreshold) {
-                    $modalFooter.addClass('revealed');
-                }
-            }
-        }, 100);
-    },
-
-    // Resetear el estado del scroll-reveal del footer principal
-    resetScrollRevealMain: () => {
-        const $mainFooter = $("#mainFooterAcciones");
-        $mainFooter.removeClass('revealed');
-        
-        // Verificar después de renderizar el contenido
-        setTimeout(() => {
-            const $window = $(window);
-            const $document = $(document);
-            const scrollTop = $window.scrollTop();
-            const windowHeight = $window.height();
-            const documentHeight = $document.height();
-            const scrollThreshold = 100;
-
-            if (scrollTop + windowHeight >= documentHeight - scrollThreshold) {
-                $mainFooter.addClass('revealed');
-            }
-        }, 150);
-    },
 
     // actualizar el contador (badge) de cada categoría en el menú
     atualizarContadoresCategorias: () => {
@@ -615,8 +520,6 @@ cardapio.metodos = {
         if (abrir) {
             $("#modalCarrinho").removeClass('hidden');
             cardapio.metodos.carregarCarrinho();
-            // Resetear el scroll-reveal al abrir el carrito
-            cardapio.metodos.resetScrollRevealMain();
         }
         else {
             $("#modalCarrinho").addClass('hidden');
@@ -692,9 +595,6 @@ cardapio.metodos = {
             // los totales ya se muestran dentro del resumen, ocultamos la barra inferior
             $(".m-footer .container-total").addClass('hidden');
         }
-
-        // Resetear el scroll-reveal del footer principal al cambiar de etapa
-        cardapio.metodos.resetScrollRevealMain();
 
     },
 
@@ -1025,9 +925,6 @@ cardapio.metodos = {
 
         $("#modalDireccion").removeClass('hidden');
         $("body").addClass('modal-abierto');
-
-        // Resetear el scroll-reveal del footer del modal
-        cardapio.metodos.resetScrollRevealModal();
 
         // foco en el primer campo para mejor UX (solo domicilio)
         if (TIPO_ENTREGA === 'domicilio') {
