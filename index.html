@@ -224,27 +224,25 @@
     <div class="container">
         <div class="row">
             <div class="col-12 col-one text-center wow fadeIn">
-                <span class="hint-title hint-title-top"><b><i class="fas fa-fire"></i> Top semanal</b></span>
+                <span class="hint-title hint-title-top top-semanal-badge" aria-label="Sección Top semanal">
+                    <span class="top-semanal-shine" aria-hidden="true"></span>
+                    <i class="fas fa-fire top-semanal-icon" aria-hidden="true"></i>
+                    <b class="top-semanal-text">Top semanal</b>
+                    <span class="top-semanal-sparkle" aria-hidden="true">
+                        <i class="fas fa-star"></i>
+                    </span>
+                </span>
                 <h1 class="title">
                     <b>Más vendidos de la semana</b>
                 </h1>
                 <p class="top-sellers-subtitle text-pretty">
                     Los productos preferidos por nuestros clientes esta semana.
-                    Descarga el listado o el catálogo completo en PDF para consultarlo cuando lo necesites.
+                    Descarga el catálogo completo en PDF para consultarlo cuando lo necesites.
                 </p>
             </div>
 
             <div class="col-12 col-one wow fadeInUp">
-                <div class="top-sellers-downloads" role="group" aria-label="Descargar documentos PDF">
-                    <button type="button" class="btn-descarga btn-descarga-primary" onclick="cardapio.metodos.descargarTopSellersPDF(event)" aria-label="Descargar top semanal en PDF">
-                        <span class="btn-descarga-icon"><i class="fas fa-file-pdf"></i></span>
-                        <span class="btn-descarga-texto">
-                            <span class="btn-descarga-titulo">Descargar top semanal</span>
-                            <span class="btn-descarga-dsc">Registro en PDF con fotos</span>
-                        </span>
-                        <span class="btn-descarga-arrow"><i class="fas fa-download"></i></span>
-                    </button>
-
+                <div class="top-sellers-downloads" role="group" aria-label="Descargar catálogo en PDF">
                     <button type="button" class="btn-descarga btn-descarga-secondary" onclick="cardapio.metodos.descargarCatalogoPDF(event)" aria-label="Descargar catálogo completo en PDF">
                         <span class="btn-descarga-icon"><i class="fas fa-book-medical"></i></span>
                         <span class="btn-descarga-texto">
@@ -872,7 +870,7 @@
                     </div>
                 </div>
 
-                <!-- RESUMEN: Aviso importante (revisar antes de enviar) -->
+                <!-- RESUMEN: Aviso importante (política de cancelación) -->
                 <div class="col-12">
                     <div class="aviso-revisar" role="alert" aria-live="polite">
                         <div class="aviso-revisar-glow" aria-hidden="true"></div>
@@ -883,18 +881,32 @@
                         <div class="aviso-revisar-body">
                             <p class="aviso-revisar-titulo">
                                 <i class="fas fa-exclamation-circle"></i>
-                                <b>Importante:</b> revisa tu pedido antes de enviarlo
+                                <b>Importante:</b> Política de Cancelación
                             </p>
                             <p class="aviso-revisar-texto">
-                                Por favor, verifica cuidadosamente los <b>productos</b>, las <b>cantidades</b>, tus
-                                <b>datos de contacto</b> y la <b>dirección de entrega</b>. Una vez que envíes el pedido,
-                                <b>todavía podrás cancelarlo</b>, pero si la cancelación se demora demasiado tiempo
-                                <b>no será posible anularlo</b> y se aplicará un <b>pequeño recargo por las molestias ocasionadas</b>.
+                                Al confirmar este pedido, aceptas que la cancelación del mismo después de
+                                <b>24 horas</b> o una vez <b>gestionado el envío</b>, incurrirá en un
+                                <b>recargo administrativo del 10%</b> sobre el total de la compra para cubrir
+                                costos de <b>gestión y logística</b>. Los <b>pedidos personalizados</b> no admiten
+                                cancelación una vez <b>iniciada la producción</b>.
                             </p>
                             <div class="aviso-revisar-chips">
-                                <span class="aviso-chip aviso-chip-ok"><i class="fas fa-check-circle"></i> Cancelación inmediata disponible</span>
-                                <span class="aviso-chip aviso-chip-warn"><i class="fas fa-clock"></i> Tras un tiempo prolongado, aplica recargo</span>
+                                <span class="aviso-chip aviso-chip-ok"><i class="fas fa-clock"></i> Cancelación gratuita dentro de 24 h</span>
+                                <span class="aviso-chip aviso-chip-warn"><i class="fas fa-percentage"></i> Recargo del 10% tras 24 h o envío gestionado</span>
+                                <span class="aviso-chip aviso-chip-warn"><i class="fas fa-ban"></i> Pedidos personalizados: no cancelables en producción</span>
                             </div>
+
+                            <!-- Check-out: aceptación obligatoria para poder enviar el pedido -->
+                            <label class="aviso-checkbox" for="chkAceptaPolitica">
+                                <input type="checkbox" id="chkAceptaPolitica" onchange="cardapio.metodos.toggleAceptaPolitica(this)" />
+                                <span class="aviso-checkbox-box" aria-hidden="true">
+                                    <i class="fas fa-check"></i>
+                                </span>
+                                <span class="aviso-checkbox-texto">
+                                    He leído y <b>acepto la Política de Cancelación</b>.
+                                    Confirmo que revisé los productos, cantidades y datos antes de enviar el pedido.
+                                </span>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -980,7 +992,7 @@
                     <i class="fas fa-clipboard-check"></i>
                     <span>Revisar pedido</span>
                 </a>
-                <a href="#" class="btn btn-yellow btn-etapa hidden" id="btnEtapaResumo" target="_blank">
+                <a href="#" class="btn btn-yellow btn-etapa hidden btn-disabled" id="btnEtapaResumo" target="_blank" aria-disabled="true" onclick="return cardapio.metodos.antesDeEnviarPedido(event)">
                     <i class="fab fa-whatsapp"></i>
                     <span>Enviar pedido</span>
                 </a>

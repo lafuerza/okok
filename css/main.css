@@ -3228,3 +3228,268 @@ body.modal-abierto {
         font-size: 13.5px;
     }
 }
+
+/* =========================================================
+   BADGE "Top semanal" — efecto visual llamativo
+   ========================================================= */
+.top-semanal-badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px 9px 18px;
+    border-radius: 999px;
+    background: linear-gradient(120deg, #ff7b00 0%, #ff3d00 45%, #ffb400 100%);
+    background-size: 220% 220%;
+    color: #fff;
+    font-size: 15px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    overflow: hidden;
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    box-shadow:
+        0 10px 24px -8px rgba(255, 85, 0, 0.55),
+        0 0 0 4px rgba(255, 123, 0, 0.12);
+    animation: topSemanalGrad 5s ease infinite, topSemanalBob 3.2s ease-in-out infinite;
+    isolation: isolate;
+}
+
+.top-semanal-badge::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: conic-gradient(from 0deg, rgba(255,255,255,0.6), rgba(255,255,255,0) 30%, rgba(255,255,255,0.4) 55%, rgba(255,255,255,0) 80%);
+    filter: blur(6px);
+    opacity: 0.55;
+    animation: topSemanalSpin 6s linear infinite;
+    z-index: -1;
+}
+
+.top-semanal-badge::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 45%);
+    pointer-events: none;
+}
+
+.top-semanal-shine {
+    position: absolute;
+    top: 0;
+    left: -60%;
+    height: 100%;
+    width: 45%;
+    background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,0.55) 50%, transparent 100%);
+    transform: skewX(-18deg);
+    animation: topSemanalShine 3.4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.top-semanal-icon {
+    font-size: 16px;
+    color: #fff;
+    filter: drop-shadow(0 0 6px rgba(255, 232, 143, 0.9));
+    animation: topSemanalFire 0.9s ease-in-out infinite alternate;
+    z-index: 2;
+}
+
+.top-semanal-text {
+    position: relative;
+    z-index: 2;
+    font-family: 'PoppinsMedium', 'Rubik', sans-serif;
+    text-shadow: 0 1px 3px rgba(120, 40, 0, 0.35);
+}
+
+.top-semanal-sparkle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    z-index: 2;
+}
+
+.top-semanal-sparkle i {
+    font-size: 11px;
+    color: #fff8cf;
+    animation: topSemanalSparkle 1.6s ease-in-out infinite;
+}
+
+.top-semanal-sparkle::before,
+.top-semanal-sparkle::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: topSemanalSparkDot 1.8s ease-in-out infinite;
+}
+
+.top-semanal-sparkle::before {
+    top: 0;
+    left: -2px;
+    animation-delay: 0.3s;
+}
+
+.top-semanal-sparkle::after {
+    bottom: 0;
+    right: -2px;
+    animation-delay: 0.9s;
+}
+
+@keyframes topSemanalGrad {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+}
+@keyframes topSemanalBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-3px); }
+}
+@keyframes topSemanalSpin {
+    to { transform: rotate(360deg); }
+}
+@keyframes topSemanalShine {
+    0%   { left: -60%; }
+    55%  { left: 130%; }
+    100% { left: 130%; }
+}
+@keyframes topSemanalFire {
+    from { transform: scale(1)    rotate(-3deg); }
+    to   { transform: scale(1.18) rotate(4deg); }
+}
+@keyframes topSemanalSparkle {
+    0%, 100% { transform: scale(1)   rotate(0deg);  opacity: 0.9; }
+    50%      { transform: scale(1.4) rotate(25deg); opacity: 1;   }
+}
+@keyframes topSemanalSparkDot {
+    0%, 100% { opacity: 0; transform: scale(0.2); }
+    50%      { opacity: 1; transform: scale(1);   }
+}
+
+/* =========================================================
+   CHECKBOX de aceptación de política (Check-out)
+   ========================================================= */
+.aviso-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 14px 0 4px 0;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1.5px dashed rgba(255, 123, 0, 0.45);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+}
+
+.aviso-checkbox:hover {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(255, 123, 0, 0.7);
+}
+
+.aviso-checkbox input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.aviso-checkbox-box {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--color-primary);
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 11px;
+    transition: all 0.18s ease;
+    margin-top: 1px;
+}
+
+.aviso-checkbox-box i {
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.2s ease;
+}
+
+.aviso-checkbox input[type="checkbox"]:checked ~ .aviso-checkbox-box {
+    background: linear-gradient(135deg, var(--color-primary) 0%, #e86a00 100%);
+    border-color: var(--color-primary);
+    box-shadow: 0 6px 14px -4px rgba(255, 123, 0, 0.55);
+}
+
+.aviso-checkbox input[type="checkbox"]:checked ~ .aviso-checkbox-box i {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.aviso-checkbox input[type="checkbox"]:focus-visible ~ .aviso-checkbox-box {
+    outline: 3px solid rgba(255, 123, 0, 0.35);
+    outline-offset: 2px;
+}
+
+.aviso-checkbox.is-aceptado {
+    background: rgba(46, 204, 113, 0.08);
+    border-color: rgba(46, 204, 113, 0.55);
+    border-style: solid;
+}
+
+.aviso-checkbox-texto {
+    font-size: 13.5px;
+    color: var(--color-black);
+    line-height: 1.45;
+}
+
+.aviso-checkbox-texto b {
+    color: var(--color-primary);
+}
+
+/* Shake cuando se intenta enviar sin aceptar */
+.aviso-checkbox.shake {
+    animation: avisoShake 0.5s ease;
+    border-color: var(--color-red);
+    background: rgba(214, 25, 4, 0.06);
+}
+
+@keyframes avisoShake {
+    0%, 100% { transform: translateX(0); }
+    20%      { transform: translateX(-6px); }
+    40%      { transform: translateX(6px); }
+    60%      { transform: translateX(-4px); }
+    80%      { transform: translateX(4px); }
+}
+
+/* Responsivo - checkbox en móvil */
+@media (max-width: 575.98px) {
+    .aviso-checkbox {
+        gap: 10px;
+        padding: 10px 12px;
+    }
+    .aviso-checkbox-texto {
+        font-size: 12.5px;
+    }
+    .top-semanal-badge {
+        font-size: 13px;
+        padding: 8px 16px 8px 14px;
+        gap: 8px;
+    }
+    .top-semanal-icon {
+        font-size: 14px;
+    }
+    .top-semanal-sparkle {
+        width: 18px;
+        height: 18px;
+    }
+}

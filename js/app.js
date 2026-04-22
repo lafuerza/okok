@@ -586,10 +586,52 @@ cardapio.metodos = {
             $("#btnEtapaResumo").removeClass('hidden');
             $("#btnVoltar").removeClass('hidden');
 
+            // reiniciar checkbox de política y deshabilitar "Enviar pedido"
+            // el usuario debe aceptar la política de cancelación cada vez
+            $("#chkAceptaPolitica").prop('checked', false);
+            $(".aviso-checkbox").removeClass('is-aceptado shake');
+            $("#btnEtapaResumo").addClass('btn-disabled').attr('aria-disabled', 'true');
+
             // los totales ya se muestran dentro del resumen, ocultamos la barra inferior
             $(".m-footer .container-total").addClass('hidden');
         }
 
+    },
+
+    // Toggle aceptación política de cancelación (Check-out)
+    toggleAceptaPolitica: (el) => {
+        let aceptado = !!(el && el.checked);
+        let $wrap = $(".aviso-checkbox");
+        let $btn = $("#btnEtapaResumo");
+
+        if (aceptado) {
+            $wrap.addClass('is-aceptado').removeClass('shake');
+            $btn.removeClass('btn-disabled').attr('aria-disabled', 'false');
+        } else {
+            $wrap.removeClass('is-aceptado');
+            $btn.addClass('btn-disabled').attr('aria-disabled', 'true');
+        }
+    },
+
+    // Interceptor antes de abrir WhatsApp: verifica que aceptó la política
+    antesDeEnviarPedido: (ev) => {
+        let aceptado = $("#chkAceptaPolitica").is(':checked');
+        if (!aceptado) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            let $wrap = $(".aviso-checkbox");
+            $wrap.removeClass('shake');
+            // forzar reflow para reiniciar animación
+            void $wrap[0].offsetWidth;
+            $wrap.addClass('shake');
+            cardapio.metodos.mensagem('Debes aceptar la Política de Cancelación para poder enviar el pedido.');
+            // scroll hacia el checkbox
+            let target = document.getElementById('chkAceptaPolitica');
+            if (target && target.scrollIntoView) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+        return true;
     },
 
     // botão de voltar etapa
@@ -1570,9 +1612,6 @@ cardapio.metodos = {
                         </div>
                         <p class="top-seller-nome" title="${cardapio.metodos.escaparHTML(e.name)}">${cardapio.metodos.escaparHTML(e.name)}</p>
                         <p class="top-seller-preco"><b>MN$ ${precio}</b></p>
-                        <span class="top-seller-vendidos">
-                            <i class="fas fa-chart-line"></i> ${t.vendidos} vendidos esta semana
-                        </span>
                         <button type="button" class="top-seller-add" onclick="cardapio.metodos.adicionarTopSellerAlCarrito('${e.id}', '${t.categoria}')" aria-label="Añadir ${cardapio.metodos.escaparHTML(e.name)} al carrito">
                             <i class="fa fa-shopping-cart"></i>
                             <span>Añadir al carrito</span>
@@ -1726,180 +1765,6 @@ cardapio.metodos = {
         let txt = `Página ${numPagina} de ${totalPaginas}`;
         let tw = pdf.getTextWidth(txt);
         pdf.text(txt, pageW - tw - 14, pageH - 7);
-    },
-
-    // ============================================================
-    //  PDF: Descargar TOP SEMANAL (registro de más vendidos)
-    // ============================================================
-    descargarTopSellersPDF: async function (ev) {
-        // capturar referencia al botón ANTES del primer await (currentTarget se pierde)
-        let boton = (ev && ev.currentTarget) ? ev.currentTarget : null;
-        if (!boton) boton = document.querySelector('.btn-descarga-primary');
-        if (typeof window.jspdf === 'undefined') {
-            cardapio.metodos.mensagem('No se pudo cargar la librería de PDF. Verifica tu conexión.');
-            return;
-        }
-
-        cardapio.metodos._setBotonDescargaCargando(boton, true);
-
-        try {
-            let { jsPDF } = window.jspdf;
-            let pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            let pageW = pdf.internal.pageSize.getWidth();
-            let pageH = pdf.internal.pageSize.getHeight();
-            let margen = 14;
-
-            let rango = cardapio.metodos.obtenerRangoSemana();
-            let top = cardapio.metodos.obtenerTopSellersCompletos();
-
-            // precarga de imágenes
-            let imagenes = {};
-            await Promise.all(top.map(async (t) => {
-                let r = await cardapio.metodos.cargarImagenComoDataURL(t.item.img);
-                imagenes[t.item.id] = r;
-            }));
-
-            // ========== PORTADA ==========
-            cardapio.metodos._pdfDibujarEncabezado(
-                pdf,
-                'Top semanal de productos',
-                `Los más vendidos de la semana (${rango.inicio} - ${rango.fin})`
-            );
-
-            let y = 40;
-            pdf.setTextColor(33, 33, 33);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(14);
-            pdf.text('Resumen del registro', margen, y);
-            y += 6;
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(10);
-            pdf.setTextColor(80, 80, 80);
-            let totalUnidades = top.reduce((acc, t) => acc + t.vendidos, 0);
-            pdf.text(`• Productos listados: ${top.length}`, margen, y); y += 5;
-            pdf.text(`• Total de unidades vendidas: ${totalUnidades}`, margen, y); y += 5;
-            pdf.text(`• Rango: ${rango.inicio} al ${rango.fin}`, margen, y); y += 8;
-
-            // listado detallado con imágenes
-            pdf.setDrawColor(230, 230, 230);
-            pdf.setLineWidth(0.3);
-            pdf.line(margen, y, pageW - margen, y);
-            y += 6;
-
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(13);
-            pdf.setTextColor(255, 123, 0);
-            pdf.text('Detalle por producto', margen, y);
-            y += 4;
-
-            let altoFila = 42;
-
-            for (let i = 0; i < top.length; i++) {
-                let t = top[i];
-                // salto de página si no cabe
-                if (y + altoFila > pageH - 20) {
-                    pdf.addPage();
-                    cardapio.metodos._pdfDibujarEncabezado(
-                        pdf,
-                        'Top semanal de productos',
-                        `Los más vendidos de la semana (${rango.inicio} - ${rango.fin})`
-                    );
-                    y = 36;
-                }
-
-                // Caja contenedora
-                pdf.setDrawColor(235, 235, 235);
-                pdf.setFillColor(252, 252, 252);
-                pdf.roundedRect(margen, y, pageW - margen * 2, altoFila - 4, 3, 3, 'FD');
-
-                // Posición / ranking
-                let colorRank = [255, 123, 0];
-                if (t.posicion === 1) colorRank = [245, 179, 1];
-                else if (t.posicion === 2) colorRank = [160, 160, 160];
-                else if (t.posicion === 3) colorRank = [205, 127, 50];
-
-                pdf.setFillColor(colorRank[0], colorRank[1], colorRank[2]);
-                pdf.roundedRect(margen + 3, y + 3, 14, 14, 2, 2, 'F');
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(11);
-                pdf.text(`#${t.posicion}`, margen + 10, y + 12, { align: 'center' });
-
-                // Imagen
-                let imgX = margen + 20;
-                let imgY = y + 3;
-                let imgW = 30;
-                let imgH = 30;
-                let imgData = imagenes[t.item.id];
-                if (imgData && imgData.ok) {
-                    try {
-                        pdf.addImage(imgData.dataURL, 'JPEG', imgX, imgY, imgW, imgH);
-                    } catch (e) {
-                        pdf.setFillColor(240, 240, 240);
-                        pdf.rect(imgX, imgY, imgW, imgH, 'F');
-                    }
-                } else {
-                    pdf.setFillColor(240, 240, 240);
-                    pdf.rect(imgX, imgY, imgW, imgH, 'F');
-                    pdf.setTextColor(150, 150, 150);
-                    pdf.setFont('helvetica', 'italic');
-                    pdf.setFontSize(8);
-                    pdf.text('Sin imagen', imgX + imgW / 2, imgY + imgH / 2, { align: 'center' });
-                }
-
-                // Datos
-                let tx = imgX + imgW + 6;
-                pdf.setTextColor(33, 33, 33);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(12);
-                let nombreTxt = t.item.name;
-                // recortar si es muy largo
-                let maxNombreW = pageW - margen - tx - 4;
-                while (pdf.getTextWidth(nombreTxt) > maxNombreW && nombreTxt.length > 3) {
-                    nombreTxt = nombreTxt.slice(0, -1);
-                }
-                if (nombreTxt !== t.item.name) nombreTxt = nombreTxt.slice(0, -1) + '…';
-                pdf.text(nombreTxt, tx, y + 9);
-
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(9);
-                pdf.setTextColor(100, 100, 100);
-                pdf.text(`Categoría: ${t.categoriaNome}`, tx, y + 15);
-
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(11);
-                pdf.setTextColor(255, 123, 0);
-                pdf.text(`Precio: MN$ ${t.item.price.toFixed(2).replace('.', ',')}`, tx, y + 22);
-
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(10);
-                pdf.setTextColor(10, 125, 44);
-                pdf.text(`Vendidos: ${t.vendidos} unidades`, tx, y + 29);
-
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(9);
-                pdf.setTextColor(120, 120, 120);
-                pdf.text(`Subtotal estimado: MN$ ${(t.item.price * t.vendidos).toFixed(2).replace('.', ',')}`, tx, y + 35);
-
-                y += altoFila;
-            }
-
-            // Paginación
-            let totalPaginas = pdf.internal.getNumberOfPages();
-            for (let p = 1; p <= totalPaginas; p++) {
-                pdf.setPage(p);
-                cardapio.metodos._pdfDibujarPiePagina(pdf, p, totalPaginas);
-            }
-
-            let nombreArchivo = `Top-semanal-CabrerasShop-${rango.fin.replace(/\//g, '-')}.pdf`;
-            pdf.save(nombreArchivo);
-            cardapio.metodos.mensagem('Top semanal descargado correctamente.', 'green');
-        } catch (err) {
-            console.error(err);
-            cardapio.metodos.mensagem('Hubo un problema al generar el PDF. Inténtalo de nuevo.');
-        } finally {
-            cardapio.metodos._setBotonDescargaCargando(boton, false);
-        }
     },
 
     // ============================================================
