@@ -73,6 +73,23 @@ var VALOR_ENTREGA = 0;
 
 var CELULAR_EMPRESA = '5355135487';
 
+// ============================================================
+//  TOP 8 MÁS VENDIDOS DE LA SEMANA (registro curado)
+//  Usamos ids que existen en MENU (dados.js). El número "vendidos"
+//  representa las unidades vendidas esta semana (simulado pero
+//  realista, para el registro semanal descargable en PDF).
+// ============================================================
+var TOP_VENDIDOS_SEMANA = [
+    { id: 'the-gramercy-tavern-burger-4-pack',                      vendidos: 182 },
+    { id: '23699-choose-your-own-thin-crust-pizza-4-pack',          vendidos: 164 },
+    { id: 'hong-kong-boba-tea-kit-for-6',                           vendidos: 151 },
+    { id: 'shake-shack-shackburger-8-pack',                         vendidos: 138 },
+    { id: 'choose-your-own-new-haven-style-pizza-6-pack',           vendidos: 127 },
+    { id: 'california-reserve-filet-mignon-steaks-gift-box',        vendidos: 118 },
+    { id: 'ribs-brisket-and-burnt-ends',                            vendidos: 104 },
+    { id: 'sea-salted-caramel-swirl-cheesecake',                    vendidos: 92  }
+];
+
 // Metadata de las categorías: nombre visible, icono y clave interna
 var CATEGORIAS = {
     "burgers":     { nome: "Antimicrobianos", icone: "fas fa-capsules" },
@@ -91,6 +108,9 @@ cardapio.eventos = {
         cardapio.metodos.obterItensCardapio();
         cardapio.metodos.carregarBotaoLigar();
         cardapio.metodos.carregarBotaoReserva();
+
+        // renderizar la sección de más vendidos de la semana
+        cardapio.metodos.renderTopSellers();
 
         // poblar el selector de código de país (teléfono)
         cardapio.metodos.renderCodigosPais();
@@ -1494,6 +1514,640 @@ cardapio.metodos = {
         $("#depoimento-" + depoimento).removeClass('hidden');
         $("#btnDepoimento-" + depoimento).addClass('active');
 
+    },
+
+    // ============================================================
+    //  MÁS VENDIDOS DE LA SEMANA + DESCARGA DE PDF
+    // ============================================================
+
+    // Devuelve el producto completo (del MENU) junto al nº de vendidos
+    obtenerTopSellersCompletos: () => {
+        let lista = [];
+        $.each(TOP_VENDIDOS_SEMANA, (i, top) => {
+            for (var cat in MENU) {
+                if (!MENU.hasOwnProperty(cat)) continue;
+                let encontrado = (MENU[cat] || []).find(p => p.id == top.id);
+                if (encontrado) {
+                    lista.push({
+                        item: encontrado,
+                        categoria: cat,
+                        categoriaNome: (CATEGORIAS[cat] || {}).nome || 'Otros',
+                        vendidos: top.vendidos,
+                        posicion: i + 1
+                    });
+                    break;
+                }
+            }
+        });
+        return lista;
+    },
+
+    // Renderiza las tarjetas en la sección #listaTopSellers
+    renderTopSellers: () => {
+        let $cont = $("#listaTopSellers");
+        if ($cont.length === 0) return;
+
+        let top = cardapio.metodos.obtenerTopSellersCompletos();
+        let html = '';
+
+        $.each(top, (i, t) => {
+            let e = t.item;
+            let rankClass = '';
+            if (t.posicion === 1) rankClass = 'rank-1';
+            else if (t.posicion === 2) rankClass = 'rank-2';
+            else if (t.posicion === 3) rankClass = 'rank-3';
+
+            let precio = e.price.toFixed(2).replace('.', ',');
+
+            html += `
+                <div class="col-6 col-md-4 col-lg-3 top-seller-col mb-4">
+                    <div class="top-seller-card animated fadeInUp">
+                        <span class="top-seller-rank ${rankClass}">
+                            <i class="fas fa-trophy"></i> #${t.posicion}
+                        </span>
+                        <div class="top-seller-img" onclick="cardapio.metodos.abrirLightbox('${e.img}', '${cardapio.metodos.escaparHTML(e.name)}')" role="button" tabindex="0" aria-label="Ampliar imagen de ${cardapio.metodos.escaparHTML(e.name)}">
+                            <img src="${e.img}" alt="${cardapio.metodos.escaparHTML(e.name)}" />
+                        </div>
+                        <p class="top-seller-nome" title="${cardapio.metodos.escaparHTML(e.name)}">${cardapio.metodos.escaparHTML(e.name)}</p>
+                        <p class="top-seller-preco"><b>MN$ ${precio}</b></p>
+                        <span class="top-seller-vendidos">
+                            <i class="fas fa-chart-line"></i> ${t.vendidos} vendidos esta semana
+                        </span>
+                        <button type="button" class="top-seller-add" onclick="cardapio.metodos.adicionarTopSellerAlCarrito('${e.id}', '${t.categoria}')" aria-label="Añadir ${cardapio.metodos.escaparHTML(e.name)} al carrito">
+                            <i class="fa fa-shopping-cart"></i>
+                            <span>Añadir al carrito</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        $cont.html(html);
+    },
+
+    // Añade al carrito un producto desde la sección top sellers
+    adicionarTopSellerAlCarrito: (id, categoria) => {
+        let filtro = MENU[categoria] || [];
+        let item = filtro.find(p => p.id == id);
+        if (!item) return;
+
+        let existe = MEU_CARRINHO.find(e => e.id == id);
+        let novaQntd;
+
+        if (existe) {
+            existe.qntd = existe.qntd + 1;
+            novaQntd = existe.qntd;
+        } else {
+            let nuevoItem = Object.assign({}, item);
+            nuevoItem.qntd = 1;
+            MEU_CARRINHO.push(nuevoItem);
+            novaQntd = 1;
+        }
+
+        cardapio.metodos.mensagem(`1 × ${item.name} agregado`, 'green');
+        cardapio.metodos.marcarTarjetaEnCarrito(id, novaQntd);
+        cardapio.metodos.atualizarBadgeTotal();
+    },
+
+    // ============================================================
+    //  PDF: carga una imagen y la convierte a dataURL usando canvas
+    //  (maneja paths relativos del proyecto; same-origin, sin CORS)
+    // ============================================================
+    cargarImagenComoDataURL: (src) => {
+        return new Promise((resolve) => {
+            try {
+                let img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    try {
+                        let canvas = document.createElement('canvas');
+                        // Mantener proporción pero tope de 600px de lado mayor
+                        let maxLado = 600;
+                        let w = img.naturalWidth || img.width;
+                        let h = img.naturalHeight || img.height;
+                        if (w > maxLado || h > maxLado) {
+                            if (w >= h) {
+                                h = Math.round(h * (maxLado / w));
+                                w = maxLado;
+                            } else {
+                                w = Math.round(w * (maxLado / h));
+                                h = maxLado;
+                            }
+                        }
+                        canvas.width = w;
+                        canvas.height = h;
+                        let ctx = canvas.getContext('2d');
+                        // fondo blanco para PNG con transparencia
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        let dataURL = canvas.toDataURL('image/jpeg', 0.85);
+                        resolve({ ok: true, dataURL: dataURL, w: w, h: h });
+                    } catch (err) {
+                        resolve({ ok: false });
+                    }
+                };
+                img.onerror = () => resolve({ ok: false });
+                img.src = src;
+            } catch (e) {
+                resolve({ ok: false });
+            }
+        });
+    },
+
+    // Fecha legible (dd/mm/aaaa) y rango "semana"
+    obtenerRangoSemana: () => {
+        let hoy = new Date();
+        let inicio = new Date(hoy);
+        inicio.setDate(hoy.getDate() - 6);
+        let fmt = (d) => {
+            let dd = String(d.getDate()).padStart(2, '0');
+            let mm = String(d.getMonth() + 1).padStart(2, '0');
+            let yy = d.getFullYear();
+            return `${dd}/${mm}/${yy}`;
+        };
+        return { inicio: fmt(inicio), fin: fmt(hoy) };
+    },
+
+    // Cambia el estado visual "cargando" del botón
+    _setBotonDescargaCargando: (boton, cargando, textoOriginal) => {
+        let $b = $(boton);
+        if (cargando) {
+            $b.addClass('is-loading').attr('disabled', 'disabled');
+            let $t = $b.find('.btn-descarga-titulo');
+            $t.data('texto-original', $t.text());
+            $t.text('Generando PDF...');
+            $b.find('.btn-descarga-arrow i').attr('class', 'fas fa-spinner fa-spin-custom');
+        } else {
+            $b.removeClass('is-loading').removeAttr('disabled');
+            let $t = $b.find('.btn-descarga-titulo');
+            let orig = $t.data('texto-original');
+            if (orig) $t.text(orig);
+            $b.find('.btn-descarga-arrow i').attr('class', 'fas fa-download');
+        }
+    },
+
+    // ============================================================
+    //  PDF: utilidades comunes de layout
+    // ============================================================
+
+    _pdfDibujarEncabezado: (pdf, titulo, subtitulo) => {
+        let pageW = pdf.internal.pageSize.getWidth();
+        // banda naranja superior
+        pdf.setFillColor(255, 123, 0);
+        pdf.rect(0, 0, pageW, 26, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(16);
+        pdf.text(titulo, 14, 13);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+        pdf.text(subtitulo, 14, 20);
+
+        // logo textual a la derecha
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(12);
+        let txt = "Cabrera's Shop";
+        let tw = pdf.getTextWidth(txt);
+        pdf.text(txt, pageW - tw - 14, 17);
+    },
+
+    _pdfDibujarPiePagina: (pdf, numPagina, totalPaginas) => {
+        let pageW = pdf.internal.pageSize.getWidth();
+        let pageH = pdf.internal.pageSize.getHeight();
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.3);
+        pdf.line(14, pageH - 14, pageW - 14, pageH - 14);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(120, 120, 120);
+        let fecha = new Date().toLocaleString('es-ES');
+        pdf.text(`Generado: ${fecha}`, 14, pageH - 7);
+        let txt = `Página ${numPagina} de ${totalPaginas}`;
+        let tw = pdf.getTextWidth(txt);
+        pdf.text(txt, pageW - tw - 14, pageH - 7);
+    },
+
+    // ============================================================
+    //  PDF: Descargar TOP SEMANAL (registro de más vendidos)
+    // ============================================================
+    descargarTopSellersPDF: async function (ev) {
+        // capturar referencia al botón ANTES del primer await (currentTarget se pierde)
+        let boton = (ev && ev.currentTarget) ? ev.currentTarget : null;
+        if (!boton) boton = document.querySelector('.btn-descarga-primary');
+        if (typeof window.jspdf === 'undefined') {
+            cardapio.metodos.mensagem('No se pudo cargar la librería de PDF. Verifica tu conexión.');
+            return;
+        }
+
+        cardapio.metodos._setBotonDescargaCargando(boton, true);
+
+        try {
+            let { jsPDF } = window.jspdf;
+            let pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            let pageW = pdf.internal.pageSize.getWidth();
+            let pageH = pdf.internal.pageSize.getHeight();
+            let margen = 14;
+
+            let rango = cardapio.metodos.obtenerRangoSemana();
+            let top = cardapio.metodos.obtenerTopSellersCompletos();
+
+            // precarga de imágenes
+            let imagenes = {};
+            await Promise.all(top.map(async (t) => {
+                let r = await cardapio.metodos.cargarImagenComoDataURL(t.item.img);
+                imagenes[t.item.id] = r;
+            }));
+
+            // ========== PORTADA ==========
+            cardapio.metodos._pdfDibujarEncabezado(
+                pdf,
+                'Top semanal de productos',
+                `Los más vendidos de la semana (${rango.inicio} - ${rango.fin})`
+            );
+
+            let y = 40;
+            pdf.setTextColor(33, 33, 33);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(14);
+            pdf.text('Resumen del registro', margen, y);
+            y += 6;
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(10);
+            pdf.setTextColor(80, 80, 80);
+            let totalUnidades = top.reduce((acc, t) => acc + t.vendidos, 0);
+            pdf.text(`• Productos listados: ${top.length}`, margen, y); y += 5;
+            pdf.text(`• Total de unidades vendidas: ${totalUnidades}`, margen, y); y += 5;
+            pdf.text(`• Rango: ${rango.inicio} al ${rango.fin}`, margen, y); y += 8;
+
+            // listado detallado con imágenes
+            pdf.setDrawColor(230, 230, 230);
+            pdf.setLineWidth(0.3);
+            pdf.line(margen, y, pageW - margen, y);
+            y += 6;
+
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(13);
+            pdf.setTextColor(255, 123, 0);
+            pdf.text('Detalle por producto', margen, y);
+            y += 4;
+
+            let altoFila = 42;
+
+            for (let i = 0; i < top.length; i++) {
+                let t = top[i];
+                // salto de página si no cabe
+                if (y + altoFila > pageH - 20) {
+                    pdf.addPage();
+                    cardapio.metodos._pdfDibujarEncabezado(
+                        pdf,
+                        'Top semanal de productos',
+                        `Los más vendidos de la semana (${rango.inicio} - ${rango.fin})`
+                    );
+                    y = 36;
+                }
+
+                // Caja contenedora
+                pdf.setDrawColor(235, 235, 235);
+                pdf.setFillColor(252, 252, 252);
+                pdf.roundedRect(margen, y, pageW - margen * 2, altoFila - 4, 3, 3, 'FD');
+
+                // Posición / ranking
+                let colorRank = [255, 123, 0];
+                if (t.posicion === 1) colorRank = [245, 179, 1];
+                else if (t.posicion === 2) colorRank = [160, 160, 160];
+                else if (t.posicion === 3) colorRank = [205, 127, 50];
+
+                pdf.setFillColor(colorRank[0], colorRank[1], colorRank[2]);
+                pdf.roundedRect(margen + 3, y + 3, 14, 14, 2, 2, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(11);
+                pdf.text(`#${t.posicion}`, margen + 10, y + 12, { align: 'center' });
+
+                // Imagen
+                let imgX = margen + 20;
+                let imgY = y + 3;
+                let imgW = 30;
+                let imgH = 30;
+                let imgData = imagenes[t.item.id];
+                if (imgData && imgData.ok) {
+                    try {
+                        pdf.addImage(imgData.dataURL, 'JPEG', imgX, imgY, imgW, imgH);
+                    } catch (e) {
+                        pdf.setFillColor(240, 240, 240);
+                        pdf.rect(imgX, imgY, imgW, imgH, 'F');
+                    }
+                } else {
+                    pdf.setFillColor(240, 240, 240);
+                    pdf.rect(imgX, imgY, imgW, imgH, 'F');
+                    pdf.setTextColor(150, 150, 150);
+                    pdf.setFont('helvetica', 'italic');
+                    pdf.setFontSize(8);
+                    pdf.text('Sin imagen', imgX + imgW / 2, imgY + imgH / 2, { align: 'center' });
+                }
+
+                // Datos
+                let tx = imgX + imgW + 6;
+                pdf.setTextColor(33, 33, 33);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(12);
+                let nombreTxt = t.item.name;
+                // recortar si es muy largo
+                let maxNombreW = pageW - margen - tx - 4;
+                while (pdf.getTextWidth(nombreTxt) > maxNombreW && nombreTxt.length > 3) {
+                    nombreTxt = nombreTxt.slice(0, -1);
+                }
+                if (nombreTxt !== t.item.name) nombreTxt = nombreTxt.slice(0, -1) + '…';
+                pdf.text(nombreTxt, tx, y + 9);
+
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                pdf.setTextColor(100, 100, 100);
+                pdf.text(`Categoría: ${t.categoriaNome}`, tx, y + 15);
+
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(11);
+                pdf.setTextColor(255, 123, 0);
+                pdf.text(`Precio: MN$ ${t.item.price.toFixed(2).replace('.', ',')}`, tx, y + 22);
+
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(10);
+                pdf.setTextColor(10, 125, 44);
+                pdf.text(`Vendidos: ${t.vendidos} unidades`, tx, y + 29);
+
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                pdf.setTextColor(120, 120, 120);
+                pdf.text(`Subtotal estimado: MN$ ${(t.item.price * t.vendidos).toFixed(2).replace('.', ',')}`, tx, y + 35);
+
+                y += altoFila;
+            }
+
+            // Paginación
+            let totalPaginas = pdf.internal.getNumberOfPages();
+            for (let p = 1; p <= totalPaginas; p++) {
+                pdf.setPage(p);
+                cardapio.metodos._pdfDibujarPiePagina(pdf, p, totalPaginas);
+            }
+
+            let nombreArchivo = `Top-semanal-CabrerasShop-${rango.fin.replace(/\//g, '-')}.pdf`;
+            pdf.save(nombreArchivo);
+            cardapio.metodos.mensagem('Top semanal descargado correctamente.', 'green');
+        } catch (err) {
+            console.error(err);
+            cardapio.metodos.mensagem('Hubo un problema al generar el PDF. Inténtalo de nuevo.');
+        } finally {
+            cardapio.metodos._setBotonDescargaCargando(boton, false);
+        }
+    },
+
+    // ============================================================
+    //  PDF: Descargar CATÁLOGO COMPLETO (todos los productos)
+    // ============================================================
+    descargarCatalogoPDF: async function (ev) {
+        // capturar referencia al botón ANTES del primer await
+        let boton = (ev && ev.currentTarget) ? ev.currentTarget : null;
+        if (!boton) boton = document.querySelector('.btn-descarga-secondary');
+        if (typeof window.jspdf === 'undefined') {
+            cardapio.metodos.mensagem('No se pudo cargar la librería de PDF. Verifica tu conexión.');
+            return;
+        }
+
+        cardapio.metodos._setBotonDescargaCargando(boton, true);
+
+        try {
+            let { jsPDF } = window.jspdf;
+            let pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            let pageW = pdf.internal.pageSize.getWidth();
+            let pageH = pdf.internal.pageSize.getHeight();
+            let margen = 12;
+            let hoy = new Date().toLocaleDateString('es-ES');
+
+            // Agrupar por categoría en el orden definido
+            let ordenCat = ['burgers', 'pizzas', 'churrasco', 'steaks', 'bebidas', 'sobremesas', 'outros'];
+            let grupos = ordenCat
+                .filter((c) => Array.isArray(MENU[c]) && MENU[c].length > 0)
+                .map((c) => ({
+                    key: c,
+                    nome: (CATEGORIAS[c] || {}).nome || c,
+                    items: MENU[c]
+                }));
+
+            let todos = [];
+            grupos.forEach((g) => g.items.forEach((it) => todos.push({ ...it, categoria: g.nome })));
+
+            // ========== PORTADA ==========
+            cardapio.metodos._pdfDibujarEncabezado(
+                pdf,
+                'Catálogo completo de productos',
+                `Todos los productos disponibles · Cabrera's Shop`
+            );
+
+            let y = 40;
+            pdf.setTextColor(33, 33, 33);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(14);
+            pdf.text('Resumen del catálogo', margen, y);
+            y += 6;
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(10);
+            pdf.setTextColor(80, 80, 80);
+            pdf.text(`• Total de productos: ${todos.length}`, margen, y); y += 5;
+            pdf.text(`• Total de categorías: ${grupos.length}`, margen, y); y += 5;
+            pdf.text(`• Fecha de generación: ${hoy}`, margen, y); y += 8;
+
+            pdf.setDrawColor(230, 230, 230);
+            pdf.setLineWidth(0.3);
+            pdf.line(margen, y, pageW - margen, y);
+            y += 7;
+
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(12);
+            pdf.setTextColor(255, 123, 0);
+            pdf.text('Índice de categorías', margen, y); y += 6;
+
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(10);
+            pdf.setTextColor(60, 60, 60);
+            grupos.forEach((g) => {
+                pdf.text(`• ${g.nome} (${g.items.length} productos)`, margen + 2, y);
+                y += 5;
+            });
+
+            // Precargar TODAS las imágenes (en paralelo) con barra de progreso
+            let imagenes = {};
+            let total = todos.length;
+            let cargadas = 0;
+            await Promise.all(todos.map(async (p) => {
+                let r = await cardapio.metodos.cargarImagenComoDataURL(p.img);
+                imagenes[p.id + '::' + p.img] = r;
+                cargadas++;
+                // actualizar texto del botón cada cierto número
+                if (cargadas % 5 === 0 || cargadas === total) {
+                    let pct = Math.round((cargadas / total) * 100);
+                    $(boton).find('.btn-descarga-titulo').text(`Generando PDF... ${pct}%`);
+                }
+            }));
+
+            // ========== PÁGINAS POR CATEGORÍA (grid 2 columnas) ==========
+            let colW = (pageW - margen * 2 - 6) / 2; // 2 columnas con gap 6
+            let altoItem = 64;
+
+            for (let gi = 0; gi < grupos.length; gi++) {
+                let g = grupos[gi];
+
+                // nueva página por categoría
+                pdf.addPage();
+                cardapio.metodos._pdfDibujarEncabezado(
+                    pdf,
+                    'Catálogo completo de productos',
+                    `Categoría: ${g.nome}`
+                );
+
+                let yStart = 34;
+                // Título de categoría
+                pdf.setFillColor(255, 242, 204);
+                pdf.roundedRect(margen, yStart, pageW - margen * 2, 11, 2, 2, 'F');
+                pdf.setTextColor(255, 123, 0);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(13);
+                pdf.text(g.nome, margen + 4, yStart + 7);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                pdf.setTextColor(120, 120, 120);
+                let right = `${g.items.length} productos`;
+                let tw = pdf.getTextWidth(right);
+                pdf.text(right, pageW - margen - 4 - tw, yStart + 7);
+
+                let curY = yStart + 16;
+                let col = 0;
+
+                for (let pi = 0; pi < g.items.length; pi++) {
+                    let p = g.items[pi];
+
+                    // si no cabe, salto de página
+                    if (curY + altoItem > pageH - 20) {
+                        pdf.addPage();
+                        cardapio.metodos._pdfDibujarEncabezado(
+                            pdf,
+                            'Catálogo completo de productos',
+                            `Categoría: ${g.nome} (continuación)`
+                        );
+                        curY = 34;
+                        col = 0;
+                    }
+
+                    let xCol = margen + col * (colW + 6);
+
+                    // caja del producto
+                    pdf.setDrawColor(230, 230, 230);
+                    pdf.setFillColor(252, 252, 252);
+                    pdf.roundedRect(xCol, curY, colW, altoItem - 4, 3, 3, 'FD');
+
+                    // imagen
+                    let imgW = 30;
+                    let imgH = 30;
+                    let imgX = xCol + 4;
+                    let imgY = curY + 4;
+                    let imgData = imagenes[p.id + '::' + p.img];
+                    if (imgData && imgData.ok) {
+                        try {
+                            pdf.addImage(imgData.dataURL, 'JPEG', imgX, imgY, imgW, imgH);
+                        } catch (e) {
+                            pdf.setFillColor(240, 240, 240);
+                            pdf.rect(imgX, imgY, imgW, imgH, 'F');
+                        }
+                    } else {
+                        pdf.setFillColor(240, 240, 240);
+                        pdf.rect(imgX, imgY, imgW, imgH, 'F');
+                        pdf.setTextColor(150, 150, 150);
+                        pdf.setFont('helvetica', 'italic');
+                        pdf.setFontSize(7);
+                        pdf.text('Sin imagen', imgX + imgW / 2, imgY + imgH / 2, { align: 'center' });
+                    }
+
+                    // nombre
+                    let tx = imgX + imgW + 4;
+                    let maxTx = xCol + colW - 4;
+                    let maxNombreW = maxTx - tx;
+                    pdf.setTextColor(33, 33, 33);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(10);
+                    let nombre = p.name;
+                    // fraccionar nombre en hasta 2 líneas
+                    let linea1 = nombre;
+                    let linea2 = '';
+                    if (pdf.getTextWidth(nombre) > maxNombreW) {
+                        let palabras = nombre.split(' ');
+                        linea1 = '';
+                        for (let w = 0; w < palabras.length; w++) {
+                            let prueba = linea1 ? linea1 + ' ' + palabras[w] : palabras[w];
+                            if (pdf.getTextWidth(prueba) <= maxNombreW) {
+                                linea1 = prueba;
+                            } else {
+                                linea2 = palabras.slice(w).join(' ');
+                                break;
+                            }
+                        }
+                        // recortar línea 2 si es muy larga
+                        while (pdf.getTextWidth(linea2) > maxNombreW && linea2.length > 3) {
+                            linea2 = linea2.slice(0, -1);
+                        }
+                        if (linea2.length < nombre.length - linea1.length) linea2 = linea2.slice(0, -1) + '…';
+                    }
+                    pdf.text(linea1, tx, curY + 10);
+                    if (linea2) pdf.text(linea2, tx, curY + 15);
+
+                    // categoría
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(120, 120, 120);
+                    pdf.text(g.nome, tx, curY + (linea2 ? 21 : 17));
+
+                    // precio
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(12);
+                    pdf.setTextColor(255, 123, 0);
+                    pdf.text(`MN$ ${p.price.toFixed(2).replace('.', ',')}`, tx, curY + (linea2 ? 29 : 26));
+
+                    // id (pequeño, como referencia de producto)
+                    pdf.setFont('helvetica', 'italic');
+                    pdf.setFontSize(7);
+                    pdf.setTextColor(150, 150, 150);
+                    let idTxt = `ID: ${p.id}`;
+                    if (pdf.getTextWidth(idTxt) > colW - 8) {
+                        while (pdf.getTextWidth(idTxt) > colW - 8 && idTxt.length > 6) {
+                            idTxt = idTxt.slice(0, -1);
+                        }
+                        idTxt = idTxt.slice(0, -1) + '…';
+                    }
+                    pdf.text(idTxt, xCol + 4, curY + altoItem - 8);
+
+                    col++;
+                    if (col >= 2) {
+                        col = 0;
+                        curY += altoItem;
+                    }
+                }
+            }
+
+            // Paginación
+            let totalPaginas = pdf.internal.getNumberOfPages();
+            for (let p = 1; p <= totalPaginas; p++) {
+                pdf.setPage(p);
+                cardapio.metodos._pdfDibujarPiePagina(pdf, p, totalPaginas);
+            }
+
+            let nombreArchivo = `Catalogo-CabrerasShop-${hoy.replace(/\//g, '-')}.pdf`;
+            pdf.save(nombreArchivo);
+            cardapio.metodos.mensagem('Catálogo completo descargado correctamente.', 'green');
+        } catch (err) {
+            console.error(err);
+            cardapio.metodos.mensagem('Hubo un problema al generar el catálogo. Inténtalo de nuevo.');
+        } finally {
+            cardapio.metodos._setBotonDescargaCargando(boton, false);
+        }
     },
 
     // mensagens

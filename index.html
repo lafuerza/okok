@@ -219,6 +219,52 @@
     </div>
 </section>
 
+<!-- ============= MÁS VENDIDOS DE LA SEMANA ============= -->
+<section class="top-sellers" id="topSellers">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 col-one text-center wow fadeIn">
+                <span class="hint-title hint-title-top"><b><i class="fas fa-fire"></i> Top semanal</b></span>
+                <h1 class="title">
+                    <b>Más vendidos de la semana</b>
+                </h1>
+                <p class="top-sellers-subtitle text-pretty">
+                    Los productos preferidos por nuestros clientes esta semana.
+                    Descarga el listado o el catálogo completo en PDF para consultarlo cuando lo necesites.
+                </p>
+            </div>
+
+            <div class="col-12 col-one wow fadeInUp">
+                <div class="top-sellers-downloads" role="group" aria-label="Descargar documentos PDF">
+                    <button type="button" class="btn-descarga btn-descarga-primary" onclick="cardapio.metodos.descargarTopSellersPDF(event)" aria-label="Descargar top semanal en PDF">
+                        <span class="btn-descarga-icon"><i class="fas fa-file-pdf"></i></span>
+                        <span class="btn-descarga-texto">
+                            <span class="btn-descarga-titulo">Descargar top semanal</span>
+                            <span class="btn-descarga-dsc">Registro en PDF con fotos</span>
+                        </span>
+                        <span class="btn-descarga-arrow"><i class="fas fa-download"></i></span>
+                    </button>
+
+                    <button type="button" class="btn-descarga btn-descarga-secondary" onclick="cardapio.metodos.descargarCatalogoPDF(event)" aria-label="Descargar catálogo completo en PDF">
+                        <span class="btn-descarga-icon"><i class="fas fa-book-medical"></i></span>
+                        <span class="btn-descarga-texto">
+                            <span class="btn-descarga-titulo">Catálogo completo</span>
+                            <span class="btn-descarga-dsc">Todos los productos en PDF</span>
+                        </span>
+                        <span class="btn-descarga-arrow"><i class="fas fa-download"></i></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-12 col-one">
+                <div class="row" id="listaTopSellers">
+                    <!-- Se llena por JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="cardapio" id="cardapio">
 
     <div class="background-cardapio"></div>
@@ -826,6 +872,33 @@
                     </div>
                 </div>
 
+                <!-- RESUMEN: Aviso importante (revisar antes de enviar) -->
+                <div class="col-12">
+                    <div class="aviso-revisar" role="alert" aria-live="polite">
+                        <div class="aviso-revisar-glow" aria-hidden="true"></div>
+                        <div class="aviso-revisar-icon" aria-hidden="true">
+                            <i class="fas fa-shield-alt"></i>
+                            <span class="aviso-revisar-pulse"></span>
+                        </div>
+                        <div class="aviso-revisar-body">
+                            <p class="aviso-revisar-titulo">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <b>Importante:</b> revisa tu pedido antes de enviarlo
+                            </p>
+                            <p class="aviso-revisar-texto">
+                                Por favor, verifica cuidadosamente los <b>productos</b>, las <b>cantidades</b>, tus
+                                <b>datos de contacto</b> y la <b>dirección de entrega</b>. Una vez que envíes el pedido,
+                                <b>todavía podrás cancelarlo</b>, pero si la cancelación se demora demasiado tiempo
+                                <b>no será posible anularlo</b> y se aplicará un <b>pequeño recargo por las molestias ocasionadas</b>.
+                            </p>
+                            <div class="aviso-revisar-chips">
+                                <span class="aviso-chip aviso-chip-ok"><i class="fas fa-check-circle"></i> Cancelación inmediata disponible</span>
+                                <span class="aviso-chip aviso-chip-warn"><i class="fas fa-clock"></i> Tras un tiempo prolongado, aplica recargo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- RESUMEN: Productos -->
                 <div class="col-12">
                     <p class="resumo-section-title">
@@ -893,19 +966,25 @@
                 </p>
             </div>
 
-            <a onclick="cardapio.metodos.carregarEndereco()" class="btn btn-yellow float-right" id="btnEtapaPedido">
-                Continuar
-            </a>
-            <a onclick="cardapio.metodos.resumoPedido()" class="btn btn-yellow float-right hidden btn-disabled" id="btnEtapaEndereco" aria-disabled="true">
-                Revisar pedido
-            </a>
-            <a href="#" class="btn btn-yellow float-right hidden" id="btnEtapaResumo" target="_blank">
-                Enviar pedido
-            </a>
+            <div class="m-footer-acciones">
+                <a onclick="cardapio.metodos.voltarEtapa()" class="btn btn-white btn-etapa btn-volver hidden" id="btnVoltar">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Volver</span>
+                </a>
 
-            <a onclick="cardapio.metodos.voltarEtapa()" class="btn btn-white float-right mr-3 hidden" id="btnVoltar">
-                Volver
-            </a>
+                <a onclick="cardapio.metodos.carregarEndereco()" class="btn btn-yellow btn-etapa" id="btnEtapaPedido">
+                    <span>Continuar</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+                <a onclick="cardapio.metodos.resumoPedido()" class="btn btn-yellow btn-etapa hidden btn-disabled" id="btnEtapaEndereco" aria-disabled="true">
+                    <i class="fas fa-clipboard-check"></i>
+                    <span>Revisar pedido</span>
+                </a>
+                <a href="#" class="btn btn-yellow btn-etapa hidden" id="btnEtapaResumo" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>Enviar pedido</span>
+                </a>
+            </div>
 
         </div>
     </div>
@@ -919,6 +998,8 @@
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/popper.min.js"></script>
     <script type="text/javascript" src="js/wow.min.js"></script>
+    <!-- jsPDF (generación de PDF en el navegador) -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="text/javascript" src="js/dados.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
     <script type="text/javascript" src="js/script.js"></script>
