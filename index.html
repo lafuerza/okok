@@ -735,6 +735,36 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Sección: ¿Quién recoge el pedido? -->
+                            <div class="form-subsection-divider">
+                                <span class="form-subsection-label"><i class="fas fa-user-friends"></i> ¿Quién recoge el pedido?</span>
+                            </div>
+                            <p class="hint-entrega mt-0">
+                                <i class="fas fa-info-circle"></i>
+                                Completa estos datos si otra persona recogerá el pedido en tu nombre. Si eres tú mismo, puedes dejarlo en blanco.
+                            </p>
+                            <div class="row">
+                                <div class="col-12 col-lg-6 col-md-6 col-sm-12">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-user-check"></i> Nombre de quien recoge</label>
+                                        <input id="txtNombreRecoge" type="text" class="form-control" placeholder="Nombre de la persona que recoge" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-lg-6 col-md-6 col-sm-12">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-mobile-alt"></i> Teléfono de quien recoge</label>
+                                        <div class="telefono-input-wrap">
+                                            <select id="ddlCountryCodeRecoge" class="form-control-country" aria-label="Código de país de quien recoge">
+                                                <!-- Se llena por JS -->
+                                            </select>
+                                            <input id="txtTelefonoRecoge" type="tel" inputmode="numeric" class="form-control form-control-telefono" placeholder="Teléfono de contacto" oninput="cardapio.metodos.validarTelefonoRecogeEnVivo()" />
+                                        </div>
+                                        <p class="telefono-feedback" id="telefonoRecogeFeedback"></p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- 2) Contenido para ENTREGA A DOMICILIO -->

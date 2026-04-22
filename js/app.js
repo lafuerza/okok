@@ -902,6 +902,9 @@ cardapio.metodos = {
         $("#modalContentDomicilio").addClass('hidden');
         $("#modalContentLocal").addClass('hidden');
 
+        // Asegurarse de renderizar los selectores de código de país
+        cardapio.metodos.renderCodigosPais();
+
         if (TIPO_ENTREGA === 'domicilio') {
             cardapio.metodos.renderMunicipios();
 
@@ -1125,6 +1128,15 @@ cardapio.metodos = {
             PAIS_TELEFONO_ACTUAL = $(this).val();
             cardapio.metodos.validarTelefonoEnVivo();
         });
+
+        // También llenar el selector de código de país para "quien recoge"
+        let $selRecoge = $("#ddlCountryCodeRecoge");
+        if ($selRecoge.length > 0 && $selRecoge.children().length === 0) {
+            $selRecoge.html(html);
+            $selRecoge.off('change.codigorecoge').on('change.codigorecoge', function () {
+                cardapio.metodos.validarTelefonoRecogeEnVivo();
+            });
+        }
     },
 
     // Busca el país por código
@@ -1183,6 +1195,61 @@ cardapio.metodos = {
             $fb.removeClass('ok').addClass('error')
                 .html(`<i class="fas fa-exclamation-triangle"></i> ${r.msg}`);
             $("#txtCEP").removeClass('input-ok').addClass('input-error');
+        }
+    },
+
+    // Valida el teléfono de quien recoge (opcional, pero si se proporciona debe ser válido)
+    validarTelefonoRecoge: () => {
+        let code = $("#ddlCountryCodeRecoge").val() || PAIS_TELEFONO_ACTUAL;
+        let pais = cardapio.metodos.buscarPaisTelefono(code);
+        let raw = ($("#txtTelefonoRecoge").val() || '').trim();
+        
+        // Si está vacío, es válido (campo opcional)
+        if (raw.length === 0) {
+            return { ok: true, msg: '', digitos: '', pais: pais, vacio: true };
+        }
+        
+        let digitos = raw.replace(/[\s\-()+]/g, '');
+        if (digitos.startsWith(pais.code.replace('+', ''))) {
+            digitos = digitos.substring(pais.code.replace('+', '').length);
+        }
+
+        if (!/^\d+$/.test(digitos)) {
+            return { ok: false, msg: 'El teléfono solo puede contener números.', digitos: digitos, pais: pais };
+        }
+        if (digitos.length < pais.min || digitos.length > pais.max) {
+            let rango = (pais.min === pais.max) ? `${pais.min} dígitos` : `entre ${pais.min} y ${pais.max} dígitos`;
+            return {
+                ok: false,
+                msg: `Número no válido para ${pais.name} (${pais.code}). Debe tener ${rango}.`,
+                digitos: digitos,
+                pais: pais
+            };
+        }
+
+        return { ok: true, msg: 'Número válido', digitos: digitos, pais: pais };
+    },
+
+    // Muestra feedback en vivo debajo del campo teléfono de quien recoge
+    validarTelefonoRecogeEnVivo: () => {
+        let $fb = $("#telefonoRecogeFeedback");
+        let raw = ($("#txtTelefonoRecoge").val() || '').trim();
+
+        if (raw.length === 0) {
+            $fb.removeClass('error ok').text('');
+            $("#txtTelefonoRecoge").removeClass('input-error input-ok');
+            return;
+        }
+
+        let r = cardapio.metodos.validarTelefonoRecoge();
+        if (r.ok) {
+            $fb.removeClass('error').addClass('ok')
+                .html(`<i class="fas fa-check-circle"></i> ${r.msg} · ${r.pais.code} ${r.pais.name}`);
+            $("#txtTelefonoRecoge").removeClass('input-error').addClass('input-ok');
+        } else {
+            $fb.removeClass('ok').addClass('error')
+                .html(`<i class="fas fa-exclamation-triangle"></i> ${r.msg}`);
+            $("#txtTelefonoRecoge").removeClass('input-ok').addClass('input-error');
         }
     },
 
@@ -1277,6 +1344,14 @@ cardapio.metodos = {
         let telefonoCompleto = `${tel.pais.code} ${tel.digitos}`;
         let cep = telefonoCompleto;
 
+        // Datos de quien recoge el pedido (opcionales)
+        let nombreRecoge = ($("#txtNombreRecoge").val() || '').trim();
+        let telRecoge = cardapio.metodos.validarTelefonoRecoge();
+        let telefonoRecogeCompleto = '';
+        if (telRecoge.ok && !telRecoge.vacio) {
+            telefonoRecogeCompleto = `${telRecoge.pais.code} ${telRecoge.digitos}`;
+        }
+
         if (TIPO_ENTREGA === 'domicilio') {
 
             let endereco = $("#txtEndereco").val().trim();
@@ -1300,7 +1375,12 @@ cardapio.metodos = {
                 uf: uf,
                 complemento: complemento,
                 municipio: MUNICIPIO_SELECCIONADO.nome,
-                costoEntrega: MUNICIPIO_SELECCIONADO.costo
+                costoEntrega: MUNICIPIO_SELECCIONADO.costo,
+                // Datos de quien recoge
+                nombreRecoge: nombreRecoge,
+                telefonoRecoge: telefonoRecogeCompleto,
+                telefonoRecogePais: telRecoge.ok && !telRecoge.vacio ? telRecoge.pais : null,
+                telefonoRecogeDigitos: telRecoge.ok && !telRecoge.vacio ? telRecoge.digitos : ''
             };
         }
         else {
@@ -1312,7 +1392,12 @@ cardapio.metodos = {
                 telefonoDigitos: tel.digitos,
                 uf: uf,
                 complemento: complemento,
-                costoEntrega: 0
+                costoEntrega: 0,
+                // Datos de quien recoge
+                nombreRecoge: nombreRecoge,
+                telefonoRecoge: telefonoRecogeCompleto,
+                telefonoRecogePais: telRecoge.ok && !telRecoge.vacio ? telRecoge.pais : null,
+                telefonoRecogeDigitos: telRecoge.ok && !telRecoge.vacio ? telRecoge.digitos : ''
             };
         }
 
@@ -1378,6 +1463,21 @@ cardapio.metodos = {
             }
             clienteHTML += cardapio.metodos.filaResumo('fas fa-phone', 'Teléfono:', telDisplay);
             clienteHTML += cardapio.metodos.filaResumo('fas fa-money-bill-wave', 'Método de pago:', MEU_ENDERECO.uf);
+
+            // Datos de quien recoge el pedido (si se proporcionaron)
+            if (MEU_ENDERECO.nombreRecoge || MEU_ENDERECO.telefonoRecoge) {
+                clienteHTML += `<div class="resumo-subsection-divider"><i class="fas fa-user-friends"></i> Quien recoge el pedido</div>`;
+                if (MEU_ENDERECO.nombreRecoge) {
+                    clienteHTML += cardapio.metodos.filaResumo('fas fa-user-check', 'Nombre:', MEU_ENDERECO.nombreRecoge);
+                }
+                if (MEU_ENDERECO.telefonoRecoge) {
+                    let telRecogeDisplay = MEU_ENDERECO.telefonoRecoge;
+                    if (MEU_ENDERECO.telefonoRecogePais) {
+                        telRecogeDisplay = `${MEU_ENDERECO.telefonoRecogePais.code} ${MEU_ENDERECO.telefonoRecogeDigitos} (${MEU_ENDERECO.telefonoRecogePais.name})`;
+                    }
+                    clienteHTML += cardapio.metodos.filaResumo('fas fa-mobile-alt', 'Teléfono:', telRecogeDisplay);
+                }
+            }
         }
         $("#resumoDatosCliente").html(clienteHTML);
 
@@ -1485,8 +1585,23 @@ cardapio.metodos = {
             telText = `${MEU_ENDERECO.telefonoPais.code} ${MEU_ENDERECO.telefonoDigitos} (${MEU_ENDERECO.telefonoPais.name})`;
         }
         texto += `• *Teléfono:* ${telText}\n`;
-        texto += `• *Método de pago:* ${MEU_ENDERECO.uf}`;
-        texto += '\n\n' + separador + '\n\n';
+        texto += `• *Método de pago:* ${MEU_ENDERECO.uf}\n`;
+
+        // Datos de quien recoge el pedido (si se proporcionaron)
+        if (MEU_ENDERECO.nombreRecoge || MEU_ENDERECO.telefonoRecoge) {
+            texto += '\n*¿QUIÉN RECOGE EL PEDIDO?*\n';
+            if (MEU_ENDERECO.nombreRecoge) {
+                texto += `• *Nombre:* ${MEU_ENDERECO.nombreRecoge}\n`;
+            }
+            if (MEU_ENDERECO.telefonoRecoge) {
+                let telRecogeText = MEU_ENDERECO.telefonoRecoge;
+                if (MEU_ENDERECO.telefonoRecogePais) {
+                    telRecogeText = `${MEU_ENDERECO.telefonoRecogePais.code} ${MEU_ENDERECO.telefonoRecogeDigitos} (${MEU_ENDERECO.telefonoRecogePais.name})`;
+                }
+                texto += `• *Teléfono:* ${telRecogeText}\n`;
+            }
+        }
+        texto += '\n' + separador + '\n\n';
 
         // --- Entrega ---
         if (esDomicilio) {
