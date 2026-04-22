@@ -1806,11 +1806,28 @@ body.no-scroll {
 }
 
 .resumo-dato-row:last-child {
-    border-bottom: none;
-}
+  border-bottom: none;
+  }
 
-.resumo-dato-icon {
+  .resumo-subsection-divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--color-separate);
+    font-family: 'PoppinsMedium', sans-serif;
+    font-size: 13px;
     color: var(--color-primary);
+  }
+
+  .resumo-subsection-divider i {
+    font-size: 14px;
+  }
+  
+  .resumo-dato-icon {
+  color: var(--color-primary);
     font-size: 14px;
     text-align: center;
 }
@@ -2476,11 +2493,36 @@ body.modal-abierto {
 }
 
 .modal-direccion-body .modal-form-section .metodo-pago-group {
-    margin-top: 8px;
-}
-
-/* ============================================= */
-/* Botón deshabilitado (Revisar pedido)          */
+  margin-top: 8px;
+  }
+  
+  /* ============================================= */
+  /* Subsección: ¿Quién recoge el pedido?          */
+  /* ============================================= */
+  .form-subsection-divider {
+    margin-top: 20px;
+    margin-bottom: 12px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--color-separate);
+    display: flex;
+    align-items: center;
+  }
+  
+  .form-subsection-label {
+    font-family: 'PoppinsMedium', sans-serif;
+    font-size: 14px;
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .form-subsection-label i {
+    font-size: 16px;
+  }
+  
+  /* ============================================= */
+  /* Botón deshabilitado (Revisar pedido)          */
 /* ============================================= */
 .btn.btn-disabled,
 .btn-yellow.btn-disabled {
