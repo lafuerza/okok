@@ -1111,20 +1111,30 @@ cardapio.metodos = {
     // ============================================================
 
     renderCodigosPais: () => {
-        let $sel = $("#ddlCountryCode");
-        if ($sel.length === 0 || $sel.children().length > 0) return;
-
         let html = '';
         PAISES_TELEFONO.forEach((p) => {
             let selected = (p.code === PAIS_TELEFONO_ACTUAL) ? 'selected' : '';
             html += `<option value="${p.code}" ${selected}>${p.code} ${p.name}</option>`;
         });
-        $sel.html(html);
 
-        $sel.off('change.codigopais').on('change.codigopais', function () {
-            PAIS_TELEFONO_ACTUAL = $(this).val();
-            cardapio.metodos.validarTelefonoEnVivo();
-        });
+        // selector principal (teléfono del cliente)
+        let $sel = $("#ddlCountryCode");
+        if ($sel.length > 0 && $sel.children().length === 0) {
+            $sel.html(html);
+            $sel.off('change.codigopais').on('change.codigopais', function () {
+                PAIS_TELEFONO_ACTUAL = $(this).val();
+                cardapio.metodos.validarTelefonoEnVivo();
+            });
+        }
+
+        // selector secundario (teléfono de quien recoge)
+        let $selRec = $("#ddlRecogeCountryCode");
+        if ($selRec.length > 0 && $selRec.children().length === 0) {
+            $selRec.html(html);
+            $selRec.off('change.codigopaisrec').on('change.codigopaisrec', function () {
+                cardapio.metodos.validarTelefonoRecogeEnVivo();
+            });
+        }
     },
 
     // Busca el país por código
@@ -1183,6 +1193,60 @@ cardapio.metodos = {
             $fb.removeClass('ok').addClass('error')
                 .html(`<i class="fas fa-exclamation-triangle"></i> ${r.msg}`);
             $("#txtCEP").removeClass('input-ok').addClass('input-error');
+        }
+    },
+
+    // Valida el teléfono de "quien recoge" (es OPCIONAL; si está vacío, es válido).
+    // Devuelve { ok: bool, msg: string, digitos: string, pais: obj, vacio: bool }
+    validarTelefonoRecoge: () => {
+        let code = $("#ddlRecogeCountryCode").val() || PAIS_TELEFONO_ACTUAL;
+        let pais = cardapio.metodos.buscarPaisTelefono(code);
+        let raw = ($("#txtRecogeTelefono").val() || '').trim();
+        let digitos = raw.replace(/[\s\-()+]/g, '');
+        if (digitos.startsWith(pais.code.replace('+', ''))) {
+            digitos = digitos.substring(pais.code.replace('+', '').length);
+        }
+
+        if (digitos.length === 0) {
+            return { ok: true, msg: '', digitos: '', pais: pais, vacio: true };
+        }
+        if (!/^\d+$/.test(digitos)) {
+            return { ok: false, msg: 'El teléfono solo puede contener números.', digitos: digitos, pais: pais, vacio: false };
+        }
+        if (digitos.length < pais.min || digitos.length > pais.max) {
+            let rango = (pais.min === pais.max) ? `${pais.min} dígitos` : `entre ${pais.min} y ${pais.max} dígitos`;
+            return {
+                ok: false,
+                msg: `Número no válido para ${pais.name} (${pais.code}). Debe tener ${rango}.`,
+                digitos: digitos,
+                pais: pais,
+                vacio: false
+            };
+        }
+
+        return { ok: true, msg: 'Número válido', digitos: digitos, pais: pais, vacio: false };
+    },
+
+    // Feedback en vivo para el teléfono de quien recoge
+    validarTelefonoRecogeEnVivo: () => {
+        let $fb = $("#telefonoRecogeFeedback");
+        let raw = ($("#txtRecogeTelefono").val() || '').trim();
+
+        if (raw.length === 0) {
+            $fb.removeClass('error ok').text('');
+            $("#txtRecogeTelefono").removeClass('input-error input-ok');
+            return;
+        }
+
+        let r = cardapio.metodos.validarTelefonoRecoge();
+        if (r.ok) {
+            $fb.removeClass('error').addClass('ok')
+                .html(`<i class="fas fa-check-circle"></i> ${r.msg} · ${r.pais.code} ${r.pais.name}`);
+            $("#txtRecogeTelefono").removeClass('input-error').addClass('input-ok');
+        } else {
+            $fb.removeClass('ok').addClass('error')
+                .html(`<i class="fas fa-exclamation-triangle"></i> ${r.msg}`);
+            $("#txtRecogeTelefono").removeClass('input-ok').addClass('input-error');
         }
     },
 

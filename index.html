@@ -734,6 +734,39 @@
                                         <p class="telefono-feedback" id="telefonoFeedback"></p>
                                     </div>
                                 </div>
+
+                                <!-- Subsección: ¿Quién recoge el pedido? (opcional) -->
+                                <div class="col-12">
+                                    <div class="form-subsection-recoge">
+                                        <div class="form-subsection-recoge-header">
+                                            <span class="form-subsection-recoge-icon"><i class="fas fa-people-arrows"></i></span>
+                                            <div class="form-subsection-recoge-textos">
+                                                <span class="form-subsection-recoge-titulo">¿Quién recoge el pedido?</span>
+                                                <span class="form-subsection-recoge-hint">Completa estos datos <b>solo si otra persona</b> diferente a ti recibirá o recogerá el pedido. <i>Opcional</i>.</span>
+                                            </div>
+                                        </div>
+                                        <div class="row form-subsection-recoge-fields">
+                                            <div class="col-12 col-lg-6 col-md-6 col-sm-12">
+                                                <div class="form-group">
+                                                    <label><i class="fas fa-user-friends"></i> Nombre de quien recoge</label>
+                                                    <input id="txtRecogeNombre" type="text" class="form-control" placeholder="Nombre y apellido" oninput="cardapio.metodos.actualizarEstadoBotonRevisar()" />
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-lg-6 col-md-6 col-sm-12">
+                                                <div class="form-group">
+                                                    <label><i class="fas fa-phone-alt"></i> Teléfono de quien recoge</label>
+                                                    <div class="telefono-input-wrap">
+                                                        <select id="ddlRecogeCountryCode" class="form-control-country" aria-label="Código de país de quien recoge">
+                                                            <!-- Se llena por JS -->
+                                                        </select>
+                                                        <input id="txtRecogeTelefono" type="tel" inputmode="numeric" class="form-control form-control-telefono" placeholder="Número de teléfono" oninput="cardapio.metodos.validarTelefonoRecogeEnVivo(); cardapio.metodos.actualizarEstadoBotonRevisar()" />
+                                                    </div>
+                                                    <p class="telefono-feedback" id="telefonoRecogeFeedback"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
